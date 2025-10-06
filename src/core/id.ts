@@ -20,3 +20,12 @@ export function reset_ids(seed?: Record<string, number>): void {
 		counters.set(prefix, value);
 	}
 }
+
+export function prime_ids(seed: Record<string, number>): void {
+	for (const [prefix, value] of Object.entries(seed)) {
+		const current = counters.get(prefix) ?? 0;
+		if (value > current) {
+			counters.set(prefix, value);
+		}
+	}
+}
