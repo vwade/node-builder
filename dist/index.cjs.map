@@ -1,1 +1,1 @@
-{"version":3,"sources":[],"sourcesContent":[],"mappings":"","names":[]}
+{"version":3,"sources":["../src/index.ts"],"names":[],"mappings":";;;AAIO,SAAS,mBAAmB,MAAA,EAA0D;AAC5F,EAAA,OAAO,EAAE,GAAG,MAAA,EAAO;AACpB","file":"index.cjs","sourcesContent":["export interface Placeholder_core_config {\n\tname: string;\n}\n\nexport function create_placeholder(config: Placeholder_core_config): Placeholder_core_config {\n\treturn { ...config };\n}\n"]}
