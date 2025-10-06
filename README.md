@@ -57,7 +57,7 @@ Each task will be tackled sequentially to maintain a stable, testable feature se
 
 ## Next steps
 
-The immediate focus is implementing **Core types & id generator**, delivering `src/core/types.ts` and `src/core/id.ts` with accompanying unit tests. Subsequent work will build on these primitives to power the graph operations and command stack.
+The immediate focus is implementing **Core types & id generator**, delivering `src/core/types.ts` and `src/core/id.ts` with accompanying unit tests. Subsequent work will build on these primitives to power the graph operations and command stack. After those land, the roadmap continues with **Graph state & operations**, expanding the core mutation surface needed by the React adapter.
 
 ## Contributing
 
