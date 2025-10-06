@@ -4,6 +4,15 @@ NovaNode is an embeddable node-graph editor built with a headless core and plugg
 
 ## Status
 
+### Recent focus
+
+* Completed the project scaffold and build pipeline, including TypeScript, tsup bundling, and ESLint flat config.
+
+### Upcoming work
+
+* Implement `src/core/types.ts` and `src/core/id.ts` to define the core graph schema and deterministic id generator.
+* Follow up with graph state operations (`src/core/graph.ts`) once the foundational types are in place.
+
 The repository currently contains the build and linting scaffold for the TypeScript codebase. Bundles are produced through `tsup`, with linting handled by ESLint's flat config. The public API surface will be expanded incrementally as core features land.
 
 ## Getting started

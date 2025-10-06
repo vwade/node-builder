@@ -1,7 +1,2 @@
-export interface Placeholder_core_config {
-	name: string;
-}
-
-export function create_placeholder(config: Placeholder_core_config): Placeholder_core_config {
-	return { ...config };
-}
+export * from './core/types.js';
+export * from './core/id.js';
