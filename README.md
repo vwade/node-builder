@@ -12,7 +12,7 @@ NovaNode is an embeddable node-graph editor built with a headless core and plugg
 
 ### Upcoming work
 
-* Introduce the command stack and history system to wire undo/redo around the new graph mutations.
+* Implement the selection model that will power focus, marquee selection, and future keyboard interactions.
 
 The repository currently contains the build and linting scaffold for the TypeScript codebase. Bundles are produced through `tsup`, with linting handled by ESLint's flat config. The public API surface will be expanded incrementally as core features land.
 
@@ -47,9 +47,9 @@ NovaNode now ships with a GitHub Actions workflow that executes `npm run lint`, 
 The roadmap follows the zero-shot sequence outlined for NovaNode:
 
 1. Project scaffold & build (complete)
-2. Core types & id generator
-3. Graph state & operations
-4. Command stack & history
+2. Core types & id generator (complete)
+3. Graph state & operations (complete)
+4. Command stack & history (complete)
 5. Selection model
 6. React adapter bootstrap
 7. Node view & dragging
@@ -71,7 +71,7 @@ Each task will be tackled sequentially to maintain a stable, testable feature se
 
 ## Next steps
 
-With the core graph operations and serialization in place, the upcoming milestone is **Command stack & history** so that every mutating action flows through undoable commands. After that lands, the plan continues to **Selection model** and the **React adapter bootstrap**, layering interaction primitives on top of the headless core.
+With the command stack and history layer shipped, the upcoming milestone is the **Selection model**, enabling the editor to track active nodes and edges for interactions. Once the selection state is in place, the roadmap continues to the **React adapter bootstrap**, layering interaction primitives on top of the headless core.
 
 ## Contributing
 
