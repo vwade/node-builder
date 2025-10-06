@@ -7,6 +7,11 @@ NovaNode is an embeddable node-graph editor built with a headless core and plugg
 ### Recent focus
 
 * Completed the project scaffold and build pipeline, including TypeScript, tsup bundling, and ESLint flat config.
+* Added a GitHub Actions workflow that runs linting, build, and tests on every push or pull request against `codex-*` branches.
+
+### Upcoming work
+
+* Implement graph state operations in `src/core/graph.ts`, building on the new core types and id generator.
 
 ### Upcoming work
 
@@ -24,6 +29,10 @@ npm run lint
 ```
 
 These commands generate the library bundles under `dist/` and run the lint checks. Additional scripts (tests, demo) will be introduced as the implementation progresses.
+
+## Continuous integration
+
+NovaNode now ships with a GitHub Actions workflow that executes `npm run lint`, `npm run build`, and `npm test` whenever changes are pushed to or proposed against `codex-*` branches. This ensures the library remains in a healthy state before merging feature work.
 
 ## Project layout
 
@@ -66,6 +75,7 @@ Each task will be tackled sequentially to maintain a stable, testable feature se
 
 ## Next steps
 
+The immediate focus is implementing **Graph state & operations** in `src/core/graph.ts`, building on the newly landed schema and id generator. Once the core mutation helpers are in place, the roadmap proceeds to **Command stack & history** followed by **Selection model**, enabling richer interaction layers for the React adapter.
 The immediate focus is implementing **Core types & id generator**, delivering `src/core/types.ts` and `src/core/id.ts` with accompanying unit tests. Subsequent work will build on these primitives to power the graph operations and command stack. After those land, the roadmap continues with **Graph state & operations**, expanding the core mutation surface needed by the React adapter.
 
 ## Contributing
