@@ -13,6 +13,11 @@ NovaNode is an embeddable node-graph editor built with a headless core and plugg
 
 * Implement graph state operations in `src/core/graph.ts`, building on the new core types and id generator.
 
+### Upcoming work
+
+* Implement `src/core/types.ts` and `src/core/id.ts` to define the core graph schema and deterministic id generator.
+* Follow up with graph state operations (`src/core/graph.ts`) once the foundational types are in place.
+
 The repository currently contains the build and linting scaffold for the TypeScript codebase. Bundles are produced through `tsup`, with linting handled by ESLint's flat config. The public API surface will be expanded incrementally as core features land.
 
 ## Getting started
@@ -71,6 +76,7 @@ Each task will be tackled sequentially to maintain a stable, testable feature se
 ## Next steps
 
 The immediate focus is implementing **Graph state & operations** in `src/core/graph.ts`, building on the newly landed schema and id generator. Once the core mutation helpers are in place, the roadmap proceeds to **Command stack & history** followed by **Selection model**, enabling richer interaction layers for the React adapter.
+The immediate focus is implementing **Core types & id generator**, delivering `src/core/types.ts` and `src/core/id.ts` with accompanying unit tests. Subsequent work will build on these primitives to power the graph operations and command stack. After those land, the roadmap continues with **Graph state & operations**, expanding the core mutation surface needed by the React adapter.
 
 ## Contributing
 
