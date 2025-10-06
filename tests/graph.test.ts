@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { Node } from '../src/core/types.js';
-import { reset_ids } from '../src/core/id.js';
+import { gen_id, reset_ids } from '../src/core/id.js';
 import {
 	add_node,
 	connect,
@@ -127,4 +127,27 @@ describe('graph operations', () => {
 		const restored_node = restored.nodes.get('a');
 		expect(restored_node?.ports[0].node_id).toBe('a');
 	});
+	it('primes id counters from deserialized graphs', () => {
+		const node_a = make_node('n_1', [
+			{ id: 'n_1_out', node_id: 'n_1', side: 'right', kind: 'out', index: 0 },
+		]);
+		const node_b = make_node('n_2', [
+			{ id: 'n_2_in', node_id: 'n_2', side: 'left', kind: 'in', index: 0 },
+		]);
+		let graph = create_graph();
+		graph = add_node(graph, node_a);
+		graph = add_node(graph, node_b);
+		graph = connect(graph, {
+			from: { node_id: 'n_1', port_id: 'n_1_out' },
+			to: { node_id: 'n_2', port_id: 'n_2_in' },
+			id: 'e_1',
+		});
+		const serialized = serialize_graph(graph);
+		reset_ids();
+		const restored = deserialize_graph(serialized);
+		expect(restored.nodes.size).toBe(2);
+		expect(gen_id('n')).toBe('n_3');
+		expect(gen_id('e')).toBe('e_2');
+	});
+
 });
