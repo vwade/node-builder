@@ -1,0 +1,23 @@
+{
+	"compilerOptions": {
+		"target": "ES2022",
+		"module": "ESNext",
+		"jsx": "react-jsx",
+		"moduleResolution": "Bundler",
+		"strict": true,
+		"esModuleInterop": false,
+		"forceConsistentCasingInFileNames": true,
+		"skipLibCheck": true,
+		"baseUrl": ".",
+		"paths": {
+			"nova-node/*": ["./src/*"]
+		},
+		"types": [
+			"vitest/globals"
+		]
+	},
+	"include": [
+		"src",
+		"examples"
+	]
+}
