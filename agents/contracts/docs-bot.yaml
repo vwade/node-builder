@@ -1,0 +1,45 @@
+agent_id: docs-bot
+version: 1.1.0
+summary: "Lint documentation and open gated pull requests for updates."
+owners:
+  - "@docs-owners"
+triggers:
+  - type: issue_comment
+    command: "/docs update"
+  - type: schedule
+    cron: "0 12 * * 1"
+capabilities:
+  - lint_docs
+  - apply_fixes
+  - open_pull_request
+inputs:
+  - type: git_repository
+  - type: issue_comment
+outputs:
+  - type: pull_request
+  - type: artifact
+writes_allowed:
+  - path: "docs/**"
+  - path: "*.md"
+forbidden_paths:
+  - "src/**"
+  - "tests/**"
+review_policy:
+  mode: pr_required
+  reviewers:
+    - "@docs-owners"
+observability:
+  metrics:
+    - "docs_bot_prs_total"
+    - "docs_bot_lint_failures_total"
+  logs: "agents/artifacts/docs-bot/logs/%Y-%m-%d.jsonl"
+security:
+  permissions:
+    contents: write
+    pull-requests: write
+    issues: write
+  secrets:
+    - "DOCS_BOT_TOKEN"
+change_management:
+  semver_bump_requires:
+    - owners_approval

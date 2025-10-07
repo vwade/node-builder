@@ -10,10 +10,12 @@ NovaNode is an embeddable node-graph editor built with a headless core and plugg
 * Implemented the core graph state operations and JSON serialization helpers, enabling pure add/remove/move/connect workflows with round-trip persistence.
 * Completed the project scaffold and build pipeline, including TypeScript, tsup bundling, and ESLint flat config.
 * Added a GitHub Actions workflow that runs linting, build, and tests on every push or pull request against `codex-*` branches.
+* Landed the React canvas adapter with draggable node surfaces and default rendering, unlocking the upcoming edge creation work.
 
 ### Upcoming work
 
-* Bootstrap the React adapter canvas to provide pan/zoom and layout scaffolding for visual interactions.
+* Wire up port handles and edge creation flows so nodes can connect interactively on the canvas.
+* Validate the edge routing approach and document how contributors can extend the interaction model.
 
 The repository currently contains the build and linting scaffold for the TypeScript codebase. Bundles are produced through `tsup`, with linting handled by ESLint's flat config. The public API surface will be expanded incrementally as core features land.
 
@@ -45,34 +47,57 @@ NovaNode now ships with a GitHub Actions workflow that executes `npm run lint`, 
 
 ## Roadmap
 
-The roadmap follows the zero-shot sequence outlined for NovaNode:
+The roadmap follows the zero-shot sequence outlined for NovaNode. Completed work is marked with a check, the current focus is hi
+ghlighted, and future milestones remain unchecked so contributors can anticipate the progression.
 
-1. Project scaffold & build (complete)
-2. Core types & id generator (complete)
-3. Graph state & operations (complete)
-4. Command stack & history (complete)
-5. Selection model (complete)
-6. React adapter bootstrap
-7. Node view & dragging
-8. Ports & edge creation
-9. Edge routing (straight → quad curve)
-10. Keyboard layer
-11. Theme tokens & CSS
-12. Import/Export API
-13. Minimap plugin
-14. Auto-layout plugin (DAG)
-15. Group nodes & comments
-16. Clipboard & duplicate
-17. Accessibility & ARIA pass
-18. Performance pass
-19. Docs & Storybook
-20. Release & SemVer
+1. [x] Project scaffold & build
+2. [x] Core types & id generator
+3. [x] Graph state & operations
+4. [x] Command stack & history
+5. [x] Selection model
+6. [x] React adapter bootstrap
+7. [x] Node view & dragging
+8. [ ] **Ports & edge creation** *(in progress — next up)*
+9. [ ] Edge routing (straight → quad curve)
+10. [ ] Keyboard layer
+11. [ ] Theme tokens & CSS
+12. [ ] Import/Export API
+13. [ ] Minimap plugin
+14. [ ] Auto-layout plugin (DAG)
+15. [ ] Group nodes & comments
+16. [ ] Clipboard & duplicate
+17. [ ] Accessibility & ARIA pass
+18. [ ] Performance pass
+19. [ ] Docs & Storybook
+20. [ ] Release & SemVer
 
-Each task will be tackled sequentially to maintain a stable, testable feature set.
+Each task will be tackled sequentially to maintain a stable, testable feature set. With draggable nodes in place, the next tangible deliverable is the ports and edge-creation workflow, which opens the door for routing, keyboard, and collaboration layers.
 
 ## Next steps
 
-With the selection model in place, the upcoming milestone is the **React adapter bootstrap**, layering pan/zoom and rendering primitives on top of the headless core.
+With draggable node surfaces shipped, the focus shifts to **Ports & edge creation** so canvases can establish connections. From there the team will move to **Edge routing**, locking in the visual polish needed before keyboard and theming layers land.
+
+## Automation roadmap
+
+Agent automation lives alongside the product roadmap. The next three initiatives keep the internal bots aligned with repository needs:
+
+* [x] Promote `docs-bot` from suggestion-only comments to gated pull requests for documentation updates (now ships gated PRs).
+* [x] Extend `perf-profiler` with WebGL frame-time capture so large graph scenarios stay within targets (ships `/perf snap`).
+* Expand `layout-lab` to benchmark orthogonal versus force-directed routing strategies.
+
+These milestones are tracked in `AGENTS.md` and ensure our tooling evolves in lockstep with the editor experience.
+
+### Perf snapshots
+
+The new **perf-profiler** agent captures a headless Chromium run of the large graph scenario and records frame-time metrics. It runs automatically on pushes to `main` and can be invoked on pull requests by commenting `/perf snap`. The workflow uploads a JSON payload and Markdown summary under `agents/artifacts/perf/<timestamp>/`, making it easy to track regressions over time.
+
+For local validation run:
+
+```bash
+npm run agents:perf
+```
+
+This executes `agents/scripts/run_perf_profiler.mjs`, which bundles the configured scenario, launches Playwright, and enforces the average and 95th percentile frame budgets declared by the scenario fixture.
 
 ## Contributing
 

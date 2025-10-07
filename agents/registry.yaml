@@ -1,0 +1,25 @@
+agents:
+	- agent_id: docs-bot
+		intent: "Lint documentation and raise gated pull requests"
+		triggers:
+			- type: issue_comment
+				command: "/docs update"
+			- type: schedule
+				cron: "0 12 * * 1"
+		writes:
+			- "docs/**"
+			- "*.md"
+		reviewers:
+			- "@docs-owners"
+	- agent_id: perf-profiler
+		intent: "Capture frame-time snapshots for large graph scenarios"
+		triggers:
+			- type: github_event
+				event: push
+				branches: [main]
+			- type: issue_comment
+				command: "/perf snap"
+		writes:
+			- "agents/artifacts/perf/**"
+		reviewers:
+			- "@perf-owners"
