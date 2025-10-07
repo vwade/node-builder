@@ -1,3 +1,7 @@
+import * as react_jsx_runtime from 'react/jsx-runtime';
+import * as react from 'react';
+import { ReactNode, CSSProperties } from 'react';
+
 type Node_id = string;
 type Port_id = string;
 type Edge_id = string;
@@ -128,4 +132,75 @@ declare function to_selection_arrays(selection: Selection_state): {
     edges: Edge_id[];
 };
 
-export { type Command, type Command_entry, type Connect_input, type Edge, type Edge_id, type Execute_result, type Graph, type History_state, type Node, type Node_id, type Port, type Port_id, type Port_kind, type Port_side, type Select_options, type Selection_kind, type Selection_state, type Serialized_graph, add_node, can_redo, can_undo, clear_history, clear_selection, clone_graph, connect, create_graph, create_history, create_selection, deselect_edge, deselect_node, deserialize_graph, disconnect, execute_command, gen_id, is_edge_selected, is_node_selected, move_nodes, peek_id, prime_ids, redo, remove_edge, remove_node, reset_ids, select_edge, select_node, serialize_graph, set_node_position, to_selection_arrays, toggle_edge, toggle_node, undo, update_node };
+interface Canvas_point {
+    x: number;
+    y: number;
+}
+interface Canvas_transform {
+    x: number;
+    y: number;
+    scale: number;
+}
+interface Zoom_options {
+    min_scale: number;
+    max_scale: number;
+    zoom_sensitivity: number;
+}
+declare const DEFAULT_TRANSFORM: Canvas_transform;
+declare const DEFAULT_ZOOM_OPTIONS: Zoom_options;
+declare function pan_by(transform: Canvas_transform, dx: number, dy: number): Canvas_transform;
+declare function zoom_at(transform: Canvas_transform, point: Canvas_point, delta: number, options?: Zoom_options): Canvas_transform;
+declare function to_screen(transform: Canvas_transform, point: Canvas_point): Canvas_point;
+declare function to_world(transform: Canvas_transform, point: Canvas_point): Canvas_point;
+
+interface Node_render_input {
+    node: Node;
+    transform: Canvas_transform;
+    world: Canvas_point;
+    screen: Canvas_point;
+}
+interface Edge_endpoint_render_input {
+    node?: Node;
+    port?: Port;
+    world: Canvas_point | null;
+    screen: Canvas_point | null;
+}
+interface Edge_render_input {
+    edge: Edge;
+    from: Edge_endpoint_render_input;
+    to: Edge_endpoint_render_input;
+    transform: Canvas_transform;
+}
+interface Graph_canvas_props {
+    graph: Graph;
+    render_node: (input: Node_render_input) => ReactNode;
+    render_edge?: (input: Edge_render_input) => ReactNode;
+    class_name?: string;
+    style?: CSSProperties;
+    background?: ReactNode;
+    show_grid?: boolean;
+    initial_transform?: Canvas_transform;
+    min_scale?: number;
+    max_scale?: number;
+    zoom_sensitivity?: number;
+    on_transform_change?: (transform: Canvas_transform) => void;
+}
+interface Canvas_context_value {
+    transform: Canvas_transform;
+    to_screen: (point: Canvas_point) => Canvas_point;
+    to_world: (point: Canvas_point) => Canvas_point;
+}
+declare const Canvas_context: react.Context<Canvas_context_value | null>;
+declare function use_canvas(): Canvas_context_value;
+declare function Graph_canvas(props: Graph_canvas_props): react_jsx_runtime.JSX.Element;
+interface Canvas_grid_props {
+    transform: Canvas_transform;
+    size?: number;
+    major_every?: number;
+    minor_color?: string;
+    major_color?: string;
+    style?: CSSProperties;
+}
+declare function Canvas_grid(props: Canvas_grid_props): react_jsx_runtime.JSX.Element;
+
+export { Canvas_context, Canvas_grid, type Canvas_grid_props, type Canvas_point, type Canvas_transform, type Command, type Command_entry, type Connect_input, DEFAULT_TRANSFORM, DEFAULT_ZOOM_OPTIONS, type Edge, type Edge_endpoint_render_input, type Edge_id, type Edge_render_input, type Execute_result, type Graph, Graph_canvas, type Graph_canvas_props, type History_state, type Node, type Node_id, type Node_render_input, type Port, type Port_id, type Port_kind, type Port_side, type Select_options, type Selection_kind, type Selection_state, type Serialized_graph, type Zoom_options, add_node, can_redo, can_undo, clear_history, clear_selection, clone_graph, connect, create_graph, create_history, create_selection, deselect_edge, deselect_node, deserialize_graph, disconnect, execute_command, gen_id, is_edge_selected, is_node_selected, move_nodes, pan_by, peek_id, prime_ids, redo, remove_edge, remove_node, reset_ids, select_edge, select_node, serialize_graph, set_node_position, to_screen, to_selection_arrays, to_world, toggle_edge, toggle_node, undo, update_node, use_canvas, zoom_at };
