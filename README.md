@@ -6,13 +6,14 @@ NovaNode is an embeddable node-graph editor built with a headless core and plugg
 
 ### Recent focus
 
+* Added a selection state module with single and multi-select helpers for nodes and edges, rounding out the core interaction primitives.
 * Implemented the core graph state operations and JSON serialization helpers, enabling pure add/remove/move/connect workflows with round-trip persistence.
 * Completed the project scaffold and build pipeline, including TypeScript, tsup bundling, and ESLint flat config.
 * Added a GitHub Actions workflow that runs linting, build, and tests on every push or pull request against `codex-*` branches.
 
 ### Upcoming work
 
-* Implement the selection model that will power focus, marquee selection, and future keyboard interactions.
+* Bootstrap the React adapter canvas to provide pan/zoom and layout scaffolding for visual interactions.
 
 The repository currently contains the build and linting scaffold for the TypeScript codebase. Bundles are produced through `tsup`, with linting handled by ESLint's flat config. The public API surface will be expanded incrementally as core features land.
 
@@ -50,7 +51,7 @@ The roadmap follows the zero-shot sequence outlined for NovaNode:
 2. Core types & id generator (complete)
 3. Graph state & operations (complete)
 4. Command stack & history (complete)
-5. Selection model
+5. Selection model (complete)
 6. React adapter bootstrap
 7. Node view & dragging
 8. Ports & edge creation
@@ -71,7 +72,7 @@ Each task will be tackled sequentially to maintain a stable, testable feature se
 
 ## Next steps
 
-With the command stack and history layer shipped, the upcoming milestone is the **Selection model**, enabling the editor to track active nodes and edges for interactions. Once the selection state is in place, the roadmap continues to the **React adapter bootstrap**, layering interaction primitives on top of the headless core.
+With the selection model in place, the upcoming milestone is the **React adapter bootstrap**, layering pan/zoom and rendering primitives on top of the headless core.
 
 ## Contributing
 
