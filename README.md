@@ -82,10 +82,22 @@ With draggable node surfaces shipped, the focus shifts to **Ports & edge creatio
 Agent automation lives alongside the product roadmap. The next three initiatives keep the internal bots aligned with repository needs:
 
 * [x] Promote `docs-bot` from suggestion-only comments to gated pull requests for documentation updates (now ships gated PRs).
-* Extend `perf-profiler` with WebGL frame-time capture so large graph scenarios stay within targets.
+* [x] Extend `perf-profiler` with WebGL frame-time capture so large graph scenarios stay within targets (ships `/perf snap`).
 * Expand `layout-lab` to benchmark orthogonal versus force-directed routing strategies.
 
 These milestones are tracked in `AGENTS.md` and ensure our tooling evolves in lockstep with the editor experience.
+
+### Perf snapshots
+
+The new **perf-profiler** agent captures a headless Chromium run of the large graph scenario and records frame-time metrics. It runs automatically on pushes to `main` and can be invoked on pull requests by commenting `/perf snap`. The workflow uploads a JSON payload and Markdown summary under `agents/artifacts/perf/<timestamp>/`, making it easy to track regressions over time.
+
+For local validation run:
+
+```bash
+npm run agents:perf
+```
+
+This executes `agents/scripts/run_perf_profiler.mjs`, which bundles the configured scenario, launches Playwright, and enforces the average and 95th percentile frame budgets declared by the scenario fixture.
 
 ## Contributing
 

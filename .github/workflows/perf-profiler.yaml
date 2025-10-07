@@ -1,0 +1,43 @@
+name: perf-profiler
+on:
+  push:
+    branches: [main]
+  issue_comment:
+    types: [created]
+permissions:
+  contents: read
+  actions: read
+  issues: read
+jobs:
+  capture:
+    if: >-
+      github.event_name == 'push' ||
+      (github.event_name == 'issue_comment' &&
+      github.event.issue.pull_request != null &&
+      contains(github.event.comment.body, '/perf snap'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CI: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - name: install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: install playwright browsers
+        run: npx playwright install --with-deps chromium
+      - name: select artifact directory
+        id: meta
+        run: |
+          dir="agents/artifacts/perf/${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          echo "path=$dir" >> "$GITHUB_OUTPUT"
+      - name: run perf profiler
+        run: pnpm run agents:perf -- --artifact-root "${{ steps.meta.outputs.path }}"
+      - name: upload perf snapshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: perf-snapshot-${{ github.run_id }}
+          path: ${{ steps.meta.outputs.path }}
