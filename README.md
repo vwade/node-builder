@@ -54,8 +54,8 @@ ghlighted, and future milestones remain unchecked so contributors can anticipate
 3. [x] Graph state & operations
 4. [x] Command stack & history
 5. [x] Selection model
-6. [ ] **React adapter bootstrap** *(in progress — next up)*
-7. [ ] Node view & dragging
+6. [x] React adapter bootstrap
+7. [ ] **Node view & dragging** *(in progress — next up)*
 8. [ ] Ports & edge creation
 9. [ ] Edge routing (straight → quad curve)
 10. [ ] Keyboard layer
@@ -75,7 +75,7 @@ apter bootstrap, which unlocks the subsequent UI-facing milestones (node view/dr
 
 ## Next steps
 
-With the selection model in place, the upcoming milestone is the **React adapter bootstrap**, layering pan/zoom and rendering primitives on top of the headless core. Once that scaffolding lands, effort will move to **Node view & dragging** followed by **Ports & edge creation**, completing the interaction loop outlined in the roadmap.
+With the React adapter bootstrap in place, the next milestone is **Node view & dragging**, bringing interactive node surfaces to the canvas. After that, effort will move to **Ports & edge creation**, completing the interaction loop outlined in the roadmap.
 
 ## Automation roadmap
 
