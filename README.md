@@ -81,7 +81,7 @@ With draggable node surfaces shipped, the focus shifts to **Ports & edge creatio
 
 Agent automation lives alongside the product roadmap. The next three initiatives keep the internal bots aligned with repository needs:
 
-* Promote `docs-bot` from suggestion-only comments to gated pull requests for documentation updates.
+* [x] Promote `docs-bot` from suggestion-only comments to gated pull requests for documentation updates (now ships gated PRs).
 * Extend `perf-profiler` with WebGL frame-time capture so large graph scenarios stay within targets.
 * Expand `layout-lab` to benchmark orthogonal versus force-directed routing strategies.
 

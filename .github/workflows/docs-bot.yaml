@@ -1,0 +1,31 @@
+name: docs-bot
+on:
+  issue_comment:
+    types: [created]
+  schedule:
+    - cron: '0 12 * * 1'
+permissions:
+  contents: write
+  pull-requests: write
+  actions: read
+jobs:
+  lint_and_propose:
+    if: >-
+      github.event_name == 'schedule' ||
+      (github.event_name == 'issue_comment' &&
+      github.event.issue.pull_request == null &&
+      contains(github.event.comment.body, '/docs update'))
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - name: install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: lint documentation
+        run: pnpm run lint
+      - name: open gated pull request
+        env:
+          DOCS_BOT_TOKEN: ${{ secrets.DOCS_BOT_TOKEN }}
+        run: node agents/scripts/open_pr_from_changes.mjs "docs-bot" "chore(docs-bot): automated fixes"

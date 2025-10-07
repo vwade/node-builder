@@ -1,0 +1,13 @@
+agents:
+  - agent_id: docs-bot
+    intent: "Lint documentation and raise gated pull requests"
+    triggers:
+      - type: issue_comment
+        command: "/docs update"
+      - type: schedule
+        cron: "0 12 * * 1"
+    writes:
+      - "docs/**"
+      - "*.md"
+    reviewers:
+      - "@docs-owners"
