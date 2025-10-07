@@ -247,8 +247,8 @@ export function Graph_canvas(props: Graph_canvas_props): JSX.Element {
 	const handle_pointer_up = useCallback((event: React_pointer_event<HTMLDivElement>) => {
 		const target = event.currentTarget as Pointer_capture_target;
 		if (
-				target.releasePointerCapture &&
-				(!target.hasPointerCapture || target.hasPointerCapture(event.pointerId))
+			target.releasePointerCapture &&
+			(!target.hasPointerCapture || target.hasPointerCapture(event.pointerId))
 		) {
 			target.releasePointerCapture(event.pointerId);
 		}
