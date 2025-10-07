@@ -182,158 +182,6 @@ function find_port(node, port_id) {
   return node.ports.find((port) => port.id === port_id);
 }
 
-// src/core/history.ts
-function create_history(initial, limit = 100) {
-  if (limit <= 0) {
-    throw new Error("History limit must be greater than zero");
-  }
-  return {
-    past: [],
-    present: initial,
-    future: [],
-    limit
-  };
-}
-function push(history, graph) {
-  if (history.present === graph) {
-    return history;
-  }
-  const trimmed = history.past.length >= history.limit ? [...history.past.slice(1), history.present] : [...history.past, history.present];
-  return {
-    past: trimmed,
-    present: graph,
-    future: [],
-    limit: history.limit
-  };
-}
-function undo(history) {
-  if (!history.past.length) {
-    return history;
-  }
-  const previous = history.past[history.past.length - 1];
-  return {
-    past: history.past.slice(0, -1),
-    present: previous,
-    future: [history.present, ...history.future],
-    limit: history.limit
-  };
-}
-function redo(history) {
-  if (!history.future.length) {
-    return history;
-  }
-  const next = history.future[0];
-  return {
-    past: [...history.past, history.present],
-    present: next,
-    future: history.future.slice(1),
-    limit: history.limit
-  };
-}
-function can_undo(history) {
-  return history.past.length > 0;
-}
-function can_redo(history) {
-  return history.future.length > 0;
-}
-
-// src/core/commands.ts
-function create_command_state(initial, limit = 100) {
-  return {
-    history: create_history(initial, limit)
-  };
-}
-function get_present_graph(state) {
-  return state.history.present;
-}
-function execute_command(state, command) {
-  const { graph, result } = command.do(state.history.present);
-  const history = push(state.history, graph);
-  if (history === state.history) {
-    return { state, result };
-  }
-  return {
-    state: { history },
-    result
-  };
-}
-function undo_command(state) {
-  const history = undo(state.history);
-  return history === state.history ? state : { history };
-}
-function redo_command(state) {
-  const history = redo(state.history);
-  return history === state.history ? state : { history };
-}
-function can_undo_command(state) {
-  return can_undo(state.history);
-}
-function can_redo_command(state) {
-  return can_redo(state.history);
-}
-function create_add_node_command(node) {
-  return {
-    type: "add_node",
-    payload: node,
-    do(graph) {
-      return { graph: add_node(graph, node), result: node };
-    },
-    undo(graph) {
-      return remove_node(graph, node.id);
-    }
-  };
-}
-function create_move_nodes_command(node_ids, dx, dy) {
-  return {
-    type: "move_nodes",
-    payload: { node_ids, dx, dy },
-    do(graph) {
-      return { graph: move_nodes(graph, node_ids, dx, dy) };
-    },
-    undo(graph) {
-      return move_nodes(graph, node_ids, -dx, -dy);
-    }
-  };
-}
-function create_connect_command(input) {
-  let created_edge_id = input.id ?? null;
-  return {
-    type: "connect",
-    payload: input,
-    do(graph) {
-      const before = created_edge_id ? null : new Set(graph.edges.keys());
-      const next = connect(graph, input);
-      if (!created_edge_id) {
-        for (const candidate of next.edges.keys()) {
-          if (!before?.has(candidate)) {
-            created_edge_id = candidate;
-            break;
-          }
-        }
-      }
-      if (!created_edge_id) {
-        throw new Error("Failed to determine edge id for connect command");
-      }
-      return { graph: next, result: created_edge_id };
-    },
-    undo(graph) {
-      if (!created_edge_id) {
-        return graph;
-      }
-      return remove_edge(graph, created_edge_id);
-    }
-  };
-}
-function create_disconnect_command(edge_id) {
-  return {
-    type: "disconnect",
-    payload: edge_id,
-    do(graph) {
-      return { graph: remove_edge(graph, edge_id) };
-    }
-  };
-}
-
 // src/core/serialize.ts
 function serialize_graph(graph) {
   return {
@@ -342,15 +190,9 @@ function serialize_graph(graph) {
   };
 }
 function deserialize_graph(serialized) {
-  const seed = {};
-  for (const node of serialized.nodes) {
-    track_id(seed, node.id);
-  }
-  for (const edge of serialized.edges) {
-    track_id(seed, edge.id);
-  }
-  if (Object.keys(seed).length) {
-    prime_ids(seed);
+  const seeds = collect_id_seeds(serialized);
+  if (Object.keys(seeds).length > 0) {
+    prime_ids(seeds);
   }
   let graph = create_graph();
   for (const node of serialized.nodes) {
@@ -366,22 +208,6 @@ function deserialize_graph(serialized) {
   }
   return graph;
 }
-function track_id(seed, id) {
-  const separator = id.lastIndexOf("_");
-  if (separator <= 0 || separator === id.length - 1) {
-    return;
-  }
-  const prefix = id.slice(0, separator);
-  const raw = id.slice(separator + 1);
-  const value = parseInt(raw, 36);
-  if (Number.isNaN(value)) {
-    return;
-  }
-  const current = seed[prefix];
-  if (!current || value > current) {
-    seed[prefix] = value;
-  }
-}
 function clone_node(node) {
   return {
     ...node,
@@ -395,39 +221,256 @@ function clone_edge(edge) {
     to: { ...edge.to }
   };
 }
+function collect_id_seeds(serialized) {
+  const maxima = /* @__PURE__ */ new Map();
+  for (const node of serialized.nodes) {
+    record_max_suffix(maxima, node.id);
+  }
+  for (const edge of serialized.edges) {
+    record_max_suffix(maxima, edge.id);
+  }
+  return Object.fromEntries(maxima);
+}
+function record_max_suffix(target, id) {
+  if (!id) {
+    return;
+  }
+  const separator = id.lastIndexOf("_");
+  if (separator === -1 || separator === id.length - 1) {
+    return;
+  }
+  const prefix = id.slice(0, separator);
+  const suffix = id.slice(separator + 1);
+  if (!/^[0-9a-z]+$/i.test(suffix)) {
+    return;
+  }
+  const value = parseInt(suffix, 36);
+  if (Number.isNaN(value)) {
+    return;
+  }
+  const current = target.get(prefix) ?? 0;
+  if (value > current) {
+    target.set(prefix, value);
+  }
+}
+
+// src/core/history.ts
+function create_history(initial_graph) {
+  return {
+    graph: initial_graph,
+    undo_stack: [],
+    redo_stack: []
+  };
+}
+function execute_command(history, command) {
+  const { graph: graph_before } = history;
+  const { graph: graph_after, result } = command.do(graph_before);
+  const mutated = graph_after !== graph_before;
+  if (!mutated) {
+    return {
+      history: {
+        graph: graph_after,
+        undo_stack: history.undo_stack,
+        redo_stack: history.redo_stack
+      },
+      result
+    };
+  }
+  const entry = {
+    command,
+    graph_before,
+    graph_after,
+    result
+  };
+  return {
+    history: {
+      graph: graph_after,
+      undo_stack: [...history.undo_stack, entry],
+      redo_stack: []
+    },
+    result
+  };
+}
+function undo(history) {
+  if (!history.undo_stack.length) {
+    return history;
+  }
+  const next_undo_stack = history.undo_stack.slice(0, -1);
+  const entry = history.undo_stack[history.undo_stack.length - 1];
+  const previous_graph = entry.command.undo ? entry.command.undo(history.graph) : entry.graph_before;
+  return {
+    graph: previous_graph,
+    undo_stack: next_undo_stack,
+    redo_stack: [...history.redo_stack, entry]
+  };
+}
+function redo(history) {
+  if (!history.redo_stack.length) {
+    return history;
+  }
+  const next_redo_stack = history.redo_stack.slice(0, -1);
+  const entry = history.redo_stack[history.redo_stack.length - 1];
+  return {
+    graph: entry.graph_after,
+    undo_stack: [...history.undo_stack, entry],
+    redo_stack: next_redo_stack
+  };
+}
+function clear_history(history, graph) {
+  return {
+    graph,
+    undo_stack: [],
+    redo_stack: []
+  };
+}
+function can_undo(history) {
+  return history.undo_stack.length > 0;
+}
+function can_redo(history) {
+  return history.redo_stack.length > 0;
+}
+
+// src/core/selection.ts
+function create_selection() {
+  return {
+    nodes: /* @__PURE__ */ new Set(),
+    edges: /* @__PURE__ */ new Set()
+  };
+}
+function clear_selection(selection) {
+  if (!selection.nodes.size && !selection.edges.size) {
+    return selection;
+  }
+  return create_selection();
+}
+function is_node_selected(selection, node_id) {
+  return selection.nodes.has(node_id);
+}
+function is_edge_selected(selection, edge_id) {
+  return selection.edges.has(edge_id);
+}
+function select_node(selection, node_id, options = {}) {
+  const append = options.append ?? false;
+  if (append) {
+    if (selection.nodes.has(node_id)) {
+      return selection;
+    }
+    const nodes2 = new Set(selection.nodes);
+    nodes2.add(node_id);
+    return {
+      nodes: nodes2,
+      edges: new Set(selection.edges)
+    };
+  }
+  const already_only_node = selection.nodes.size === 1 && selection.nodes.has(node_id);
+  if (already_only_node && !selection.edges.size) {
+    return selection;
+  }
+  const nodes = /* @__PURE__ */ new Set();
+  nodes.add(node_id);
+  return {
+    nodes,
+    edges: /* @__PURE__ */ new Set()
+  };
+}
+function select_edge(selection, edge_id, options = {}) {
+  const append = options.append ?? false;
+  if (append) {
+    if (selection.edges.has(edge_id)) {
+      return selection;
+    }
+    const edges2 = new Set(selection.edges);
+    edges2.add(edge_id);
+    return {
+      nodes: new Set(selection.nodes),
+      edges: edges2
+    };
+  }
+  const already_only_edge = selection.edges.size === 1 && selection.edges.has(edge_id);
+  if (already_only_edge && !selection.nodes.size) {
+    return selection;
+  }
+  const edges = /* @__PURE__ */ new Set();
+  edges.add(edge_id);
+  return {
+    nodes: /* @__PURE__ */ new Set(),
+    edges
+  };
+}
+function deselect_node(selection, node_id) {
+  if (!selection.nodes.has(node_id)) {
+    return selection;
+  }
+  const nodes = new Set(selection.nodes);
+  nodes.delete(node_id);
+  if (!nodes.size && !selection.edges.size) {
+    return create_selection();
+  }
+  return {
+    nodes,
+    edges: new Set(selection.edges)
+  };
+}
+function deselect_edge(selection, edge_id) {
+  if (!selection.edges.has(edge_id)) {
+    return selection;
+  }
+  const edges = new Set(selection.edges);
+  edges.delete(edge_id);
+  if (!edges.size && !selection.nodes.size) {
+    return create_selection();
+  }
+  return {
+    nodes: new Set(selection.nodes),
+    edges
+  };
+}
+function toggle_node(selection, node_id) {
+  return selection.nodes.has(node_id) ? deselect_node(selection, node_id) : select_node(selection, node_id, { append: true });
+}
+function toggle_edge(selection, edge_id) {
+  return selection.edges.has(edge_id) ? deselect_edge(selection, edge_id) : select_edge(selection, edge_id, { append: true });
+}
+function to_selection_arrays(selection) {
+  return {
+    nodes: [...selection.nodes],
+    edges: [...selection.edges]
+  };
+}
 
 exports.add_node = add_node;
 exports.can_redo = can_redo;
-exports.can_redo_command = can_redo_command;
 exports.can_undo = can_undo;
-exports.can_undo_command = can_undo_command;
+exports.clear_history = clear_history;
+exports.clear_selection = clear_selection;
 exports.clone_graph = clone_graph;
 exports.connect = connect;
-exports.create_add_node_command = create_add_node_command;
-exports.create_command_state = create_command_state;
-exports.create_connect_command = create_connect_command;
-exports.create_disconnect_command = create_disconnect_command;
 exports.create_graph = create_graph;
 exports.create_history = create_history;
-exports.create_move_nodes_command = create_move_nodes_command;
+exports.create_selection = create_selection;
+exports.deselect_edge = deselect_edge;
+exports.deselect_node = deselect_node;
 exports.deserialize_graph = deserialize_graph;
 exports.disconnect = disconnect;
 exports.execute_command = execute_command;
 exports.gen_id = gen_id;
-exports.get_present_graph = get_present_graph;
+exports.is_edge_selected = is_edge_selected;
+exports.is_node_selected = is_node_selected;
 exports.move_nodes = move_nodes;
 exports.peek_id = peek_id;
 exports.prime_ids = prime_ids;
-exports.push = push;
 exports.redo = redo;
-exports.redo_command = redo_command;
 exports.remove_edge = remove_edge;
 exports.remove_node = remove_node;
 exports.reset_ids = reset_ids;
+exports.select_edge = select_edge;
+exports.select_node = select_node;
 exports.serialize_graph = serialize_graph;
 exports.set_node_position = set_node_position;
+exports.to_selection_arrays = to_selection_arrays;
+exports.toggle_edge = toggle_edge;
+exports.toggle_node = toggle_node;
 exports.undo = undo;
-exports.undo_command = undo_command;
 exports.update_node = update_node;
 //# sourceMappingURL=index.cjs.map
 //# sourceMappingURL=index.cjs.map

@@ -1,116 +1,123 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import {
-	create_add_node_command,
-	create_command_state,
-	create_connect_command,
-	create_move_nodes_command,
-	execute_command,
-	get_present_graph,
-	redo_command,
-	undo_command,
-} from '../src/core/commands.js';
-import { add_node, create_graph, move_nodes } from '../src/core/graph.js';
+import type { Command, Node } from '../src/core/types.js';
+import { add_node, create_graph, remove_node, set_node_position } from '../src/core/graph.js';
 import {
 	can_redo,
 	can_undo,
+	clear_history,
 	create_history,
-	push,
+	execute_command,
 	redo,
 	undo,
 } from '../src/core/history.js';
-import { reset_ids } from '../src/core/id.js';
-import type { Graph, Node } from '../src/core/types.js';
 
-function node_with_ports(id: string, ports: Node['ports']): Node {
+function make_node(id: string): Node {
 	return {
 		id,
-		type: 'node',
+		type: 'test',
 		x: 0,
 		y: 0,
-		ports,
+		ports: [],
 	};
 }
 
-function graph_with_nodes(nodes: Node[]): Graph {
-	let graph = create_graph();
-	for (const node of nodes) {
-		graph = add_node(graph, node);
-	}
-	return graph;
-}
+describe('command history', () => {
+	let base_graph = create_graph();
 
-describe('history', () => {
-	it('pushes states, enforces limit, and supports undo/redo', () => {
-		let history = create_history(create_graph(), 2);
-		const first = add_node(history.present, node_with_ports('a', []));
-		history = push(history, first);
-		expect(history.past).toHaveLength(1);
+	beforeEach(() => {
+		base_graph = create_graph();
+	});
+
+	it('executes commands and tracks undo/redo stacks', () => {
+		let history = create_history(base_graph);
+		const node = make_node('node_a');
+		const command: Command<string> = {
+			type: 'add_node',
+			payload: node,
+			do(graph) {
+				const next = add_node(graph, node);
+				return { graph: next, result: node.id };
+			},
+			undo(graph) {
+				return remove_node(graph, node.id);
+			},
+		};
+		const executed = execute_command(history, command);
+		history = executed.history;
+		expect(executed.result).toBe('node_a');
+		expect(history.graph.nodes.has('node_a')).toBe(true);
 		expect(can_undo(history)).toBe(true);
-		const second = add_node(first, node_with_ports('b', []));
-		history = push(history, second);
-		expect(history.past).toHaveLength(2);
-		history = push(history, move_nodes(second, ['b'], 10, 0));
-		expect(history.past).toHaveLength(2);
+		expect(can_redo(history)).toBe(false);
 		history = undo(history);
-		expect(history.present.nodes.get('b')?.x).toBe(0);
+		expect(history.graph.nodes.size).toBe(0);
+		expect(can_undo(history)).toBe(false);
 		expect(can_redo(history)).toBe(true);
 		history = redo(history);
-		expect(history.present.nodes.get('b')?.x).toBe(10);
+		expect(history.graph.nodes.has('node_a')).toBe(true);
+		expect(can_redo(history)).toBe(false);
+	});
+
+	it('clears redo stack when executing a new command after undo', () => {
+		let history = create_history(base_graph);
+		const first_node = make_node('first');
+		const add_first: Command<void> = {
+			type: 'add_first',
+			do(graph) {
+				return { graph: add_node(graph, first_node) };
+			},
+			undo(graph) {
+				return remove_node(graph, first_node.id);
+			},
+		};
+		history = execute_command(history, add_first).history;
 		history = undo(history);
-		history = undo(history);
-		expect(can_undo(history)).toBe(false);
-	});
-});
-
-describe('command stack', () => {
-	beforeEach(() => {
-		reset_ids();
-	});
-
-	it('executes commands with undo/redo flow', () => {
-		let state = create_command_state(create_graph());
-		const add = create_add_node_command(node_with_ports('n1', [
-			{ id: 'n1_out', node_id: 'n1', side: 'right', kind: 'out', index: 0 },
-		]));
-		({ state } = execute_command(state, add));
-		expect(get_present_graph(state).nodes.has('n1')).toBe(true);
-		const move = create_move_nodes_command(['n1'], 5, 5);
-		({ state } = execute_command(state, move));
-		expect(get_present_graph(state).nodes.get('n1')?.x).toBe(5);
-		state = undo_command(state);
-		expect(get_present_graph(state).nodes.get('n1')?.x).toBe(0);
-		state = redo_command(state);
-		expect(get_present_graph(state).nodes.get('n1')?.y).toBe(5);
+		expect(can_redo(history)).toBe(true);
+		const second_node = make_node('second');
+		const add_second: Command<void> = {
+			type: 'add_second',
+			do(graph) {
+				return { graph: add_node(graph, second_node) };
+			},
+			undo(graph) {
+				return remove_node(graph, second_node.id);
+			},
+		};
+		history = execute_command(history, add_second).history;
+		expect(can_redo(history)).toBe(false);
 	});
 
-	it('clears redo stack after new command', () => {
-		let state = create_command_state(create_graph());
-		({ state } = execute_command(state, create_add_node_command(node_with_ports('n1', []))));
-		state = undo_command(state);
-		({ state } = execute_command(state, create_add_node_command(node_with_ports('n2', []))));
-		state = redo_command(state);
-		expect(get_present_graph(state).nodes.size).toBe(1);
+	it('skips recording entries when commands do not mutate the graph', () => {
+		let history = create_history(base_graph);
+		const noop_command: Command<void> = {
+			type: 'noop',
+			do(graph) {
+				return { graph };
+			},
+		};
+		const executed = execute_command(history, noop_command);
+		const next_history = executed.history;
+		expect(next_history.undo_stack.length).toBe(0);
+		expect(next_history.redo_stack.length).toBe(0);
+		expect(can_undo(next_history)).toBe(false);
 	});
 
-	it('connect command assigns ids and supports undo', () => {
-		const graph = graph_with_nodes([
-			node_with_ports('n1', [
-				{ id: 'n1_out', node_id: 'n1', side: 'right', kind: 'out', index: 0 },
-			]),
-			node_with_ports('n2', [
-				{ id: 'n2_in', node_id: 'n2', side: 'left', kind: 'in', index: 0 },
-			]),
-		]);
-		let state = create_command_state(graph);
-		const connect_command = create_connect_command({
-			from: { node_id: 'n1', port_id: 'n1_out' },
-			to: { node_id: 'n2', port_id: 'n2_in' },
-		});
-		const exec = execute_command(state, connect_command);
-		state = exec.state;
-		expect(exec.result).toMatch(/^e_/);
-		expect(get_present_graph(state).edges.size).toBe(1);
-		state = undo_command(state);
-		expect(get_present_graph(state).edges.size).toBe(0);
+	it('clears stacks while replacing the tracked graph', () => {
+		let history = create_history(base_graph);
+		const node = make_node('to_replace');
+		history = execute_command(history, {
+			type: 'add',
+			do(graph) {
+				return { graph: add_node(graph, node) };
+			},
+			undo(graph) {
+				return remove_node(graph, node.id);
+			},
+		} as Command<void>).history;
+		expect(history.undo_stack.length).toBe(1);
+		const reset_graph = create_graph();
+		history = clear_history(history, reset_graph);
+		expect(history.graph).toBe(reset_graph);
+		expect(history.undo_stack.length).toBe(0);
+		expect(history.redo_stack.length).toBe(0);
 	});
 });

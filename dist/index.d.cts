@@ -75,37 +75,6 @@ declare function connect(graph: Graph, input: Connect_input): Graph;
 declare function remove_edge(graph: Graph, edge_id: Edge_id): Graph;
 declare function disconnect(graph: Graph, edge_id: Edge_id): Graph;
 
-interface History {
-    past: Graph[];
-    present: Graph;
-    future: Graph[];
-    limit: number;
-}
-declare function create_history(initial: Graph, limit?: number): History;
-declare function push(history: History, graph: Graph): History;
-declare function undo(history: History): History;
-declare function redo(history: History): History;
-declare function can_undo(history: History): boolean;
-declare function can_redo(history: History): boolean;
-
-interface Command_state {
-    history: History;
-}
-declare function create_command_state(initial: Graph, limit?: number): Command_state;
-declare function get_present_graph(state: Command_state): Graph;
-declare function execute_command<R>(state: Command_state, command: Command<R>): {
-    state: Command_state;
-    result?: R;
-};
-declare function undo_command(state: Command_state): Command_state;
-declare function redo_command(state: Command_state): Command_state;
-declare function can_undo_command(state: Command_state): boolean;
-declare function can_redo_command(state: Command_state): boolean;
-declare function create_add_node_command(node: Node): Command<Node>;
-declare function create_move_nodes_command(node_ids: Node_id[], dx: number, dy: number): Command<void>;
-declare function create_connect_command(input: Connect_input): Command<Edge_id>;
-declare function create_disconnect_command(edge_id: Edge_id): Command<void>;
-
 interface Serialized_graph {
     nodes: Node[];
     edges: Edge[];
@@ -113,4 +82,50 @@ interface Serialized_graph {
 declare function serialize_graph(graph: Graph): Serialized_graph;
 declare function deserialize_graph(serialized: Serialized_graph): Graph;
 
-export { type Command, type Command_state, type Connect_input, type Edge, type Edge_id, type Graph, type History, type Node, type Node_id, type Port, type Port_id, type Port_kind, type Port_side, type Serialized_graph, add_node, can_redo, can_redo_command, can_undo, can_undo_command, clone_graph, connect, create_add_node_command, create_command_state, create_connect_command, create_disconnect_command, create_graph, create_history, create_move_nodes_command, deserialize_graph, disconnect, execute_command, gen_id, get_present_graph, move_nodes, peek_id, prime_ids, push, redo, redo_command, remove_edge, remove_node, reset_ids, serialize_graph, set_node_position, undo, undo_command, update_node };
+interface Command_entry<R = unknown> {
+    command: Command<R>;
+    graph_before: Graph;
+    graph_after: Graph;
+    result?: R;
+}
+interface History_state {
+    graph: Graph;
+    undo_stack: Command_entry[];
+    redo_stack: Command_entry[];
+}
+interface Execute_result<R = unknown> {
+    history: History_state;
+    result?: R;
+}
+declare function create_history(initial_graph: Graph): History_state;
+declare function execute_command<R>(history: History_state, command: Command<R>): Execute_result<R>;
+declare function undo(history: History_state): History_state;
+declare function redo(history: History_state): History_state;
+declare function clear_history(history: History_state, graph: Graph): History_state;
+declare function can_undo(history: History_state): boolean;
+declare function can_redo(history: History_state): boolean;
+
+type Selection_kind = 'node' | 'edge';
+interface Selection_state {
+    nodes: Set<Node_id>;
+    edges: Set<Edge_id>;
+}
+interface Select_options {
+    append?: boolean;
+}
+declare function create_selection(): Selection_state;
+declare function clear_selection(selection: Selection_state): Selection_state;
+declare function is_node_selected(selection: Selection_state, node_id: Node_id): boolean;
+declare function is_edge_selected(selection: Selection_state, edge_id: Edge_id): boolean;
+declare function select_node(selection: Selection_state, node_id: Node_id, options?: Select_options): Selection_state;
+declare function select_edge(selection: Selection_state, edge_id: Edge_id, options?: Select_options): Selection_state;
+declare function deselect_node(selection: Selection_state, node_id: Node_id): Selection_state;
+declare function deselect_edge(selection: Selection_state, edge_id: Edge_id): Selection_state;
+declare function toggle_node(selection: Selection_state, node_id: Node_id): Selection_state;
+declare function toggle_edge(selection: Selection_state, edge_id: Edge_id): Selection_state;
+declare function to_selection_arrays(selection: Selection_state): {
+    nodes: Node_id[];
+    edges: Edge_id[];
+};
+
+export { type Command, type Command_entry, type Connect_input, type Edge, type Edge_id, type Execute_result, type Graph, type History_state, type Node, type Node_id, type Port, type Port_id, type Port_kind, type Port_side, type Select_options, type Selection_kind, type Selection_state, type Serialized_graph, add_node, can_redo, can_undo, clear_history, clear_selection, clone_graph, connect, create_graph, create_history, create_selection, deselect_edge, deselect_node, deserialize_graph, disconnect, execute_command, gen_id, is_edge_selected, is_node_selected, move_nodes, peek_id, prime_ids, redo, remove_edge, remove_node, reset_ids, select_edge, select_node, serialize_graph, set_node_position, to_selection_arrays, toggle_edge, toggle_node, undo, update_node };

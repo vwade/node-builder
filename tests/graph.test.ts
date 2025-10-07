@@ -127,26 +127,27 @@ describe('graph operations', () => {
 		const restored_node = restored.nodes.get('a');
 		expect(restored_node?.ports[0].node_id).toBe('a');
 	});
-
-	it('advances id counters after deserializing', () => {
+	it('primes id counters from deserialized graphs', () => {
 		const node_a = make_node('n_1', [
-			{ id: 'a_out', node_id: 'n_1', side: 'right', kind: 'out', index: 0 },
+			{ id: 'n_1_out', node_id: 'n_1', side: 'right', kind: 'out', index: 0 },
 		]);
 		const node_b = make_node('n_2', [
-			{ id: 'b_in', node_id: 'n_2', side: 'left', kind: 'in', index: 0 },
+			{ id: 'n_2_in', node_id: 'n_2', side: 'left', kind: 'in', index: 0 },
 		]);
 		let graph = create_graph();
 		graph = add_node(graph, node_a);
 		graph = add_node(graph, node_b);
 		graph = connect(graph, {
-			from: { node_id: 'n_1', port_id: 'a_out' },
-			to: { node_id: 'n_2', port_id: 'b_in' },
+			from: { node_id: 'n_1', port_id: 'n_1_out' },
+			to: { node_id: 'n_2', port_id: 'n_2_in' },
+			id: 'e_1',
 		});
-		const restored = deserialize_graph(serialize_graph(graph));
-		const next_node_id = gen_id('n');
-		const next_edge_id = gen_id('e');
-		expect(next_node_id).toBe('n_3');
-		expect(next_edge_id).toBe('e_2');
+		const serialized = serialize_graph(graph);
+		reset_ids();
+		const restored = deserialize_graph(serialized);
 		expect(restored.nodes.size).toBe(2);
+		expect(gen_id('n')).toBe('n_3');
+		expect(gen_id('e')).toBe('e_2');
 	});
+
 });
