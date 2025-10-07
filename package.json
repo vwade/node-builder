@@ -25,11 +25,14 @@
 		"react",
 		"typescript"
 	],
-	"author": "",
+	"author": "Victor Wade",
 	"license": "MIT",
 	"repository": {
 		"type": "git",
 		"url": "git@github.com:vwade/node-builder.git"
+	},
+	"jest": {
+		"testEnvironment": "jsdom"
 	},
 	"peerDependencies": {
 		"react": ">=18",
@@ -47,6 +50,7 @@
 		"@typescript-eslint/eslint-plugin": "^8.46.0",
 		"@typescript-eslint/parser": "^8.46.0",
 		"eslint": "^9.37.0",
+		"jsdom": "^27.0.0",
 		"tsup": "^8.5.0",
 		"typescript": "^5.9.3",
 		"vite": "^7.1.9",
