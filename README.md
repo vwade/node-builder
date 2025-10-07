@@ -10,11 +10,12 @@ NovaNode is an embeddable node-graph editor built with a headless core and plugg
 * Implemented the core graph state operations and JSON serialization helpers, enabling pure add/remove/move/connect workflows with round-trip persistence.
 * Completed the project scaffold and build pipeline, including TypeScript, tsup bundling, and ESLint flat config.
 * Added a GitHub Actions workflow that runs linting, build, and tests on every push or pull request against `codex-*` branches.
+* Landed the React canvas adapter with draggable node surfaces and default rendering, unlocking the upcoming edge creation work.
 
 ### Upcoming work
 
-* Bootstrap the React adapter canvas to provide pan/zoom and layout scaffolding for visual interactions.
-* Outline the follow-on interaction milestones so downstream contributors can plan their work.
+* Wire up port handles and edge creation flows so nodes can connect interactively on the canvas.
+* Validate the edge routing approach and document how contributors can extend the interaction model.
 
 The repository currently contains the build and linting scaffold for the TypeScript codebase. Bundles are produced through `tsup`, with linting handled by ESLint's flat config. The public API surface will be expanded incrementally as core features land.
 
@@ -55,8 +56,8 @@ ghlighted, and future milestones remain unchecked so contributors can anticipate
 4. [x] Command stack & history
 5. [x] Selection model
 6. [x] React adapter bootstrap
-7. [ ] **Node view & dragging** *(in progress — next up)*
-8. [ ] Ports & edge creation
+7. [x] Node view & dragging
+8. [ ] **Ports & edge creation** *(in progress — next up)*
 9. [ ] Edge routing (straight → quad curve)
 10. [ ] Keyboard layer
 11. [ ] Theme tokens & CSS
@@ -70,12 +71,11 @@ ghlighted, and future milestones remain unchecked so contributors can anticipate
 19. [ ] Docs & Storybook
 20. [ ] Release & SemVer
 
-Each task will be tackled sequentially to maintain a stable, testable feature set. The next tangible deliverable is the React ad
-apter bootstrap, which unlocks the subsequent UI-facing milestones (node view/dragging and port interactions).
+Each task will be tackled sequentially to maintain a stable, testable feature set. With draggable nodes in place, the next tangible deliverable is the ports and edge-creation workflow, which opens the door for routing, keyboard, and collaboration layers.
 
 ## Next steps
 
-With the React adapter bootstrap in place, the next milestone is **Node view & dragging**, bringing interactive node surfaces to the canvas. After that, effort will move to **Ports & edge creation**, completing the interaction loop outlined in the roadmap.
+With draggable node surfaces shipped, the focus shifts to **Ports & edge creation** so canvases can establish connections. From there the team will move to **Edge routing**, locking in the visual polish needed before keyboard and theming layers land.
 
 ## Automation roadmap
 
