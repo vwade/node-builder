@@ -122,4 +122,35 @@ describe('Graph_node_layer', () => {
 		}
 		expect(payload.delta).toEqual({ x: 20, y: 30 });
 	});
+
+	test('does not throw when pointer capture APIs are missing', () => {
+		const { container } = render(<Graph_canvas />);
+		const canvas = container.firstElementChild as HTMLElement;
+		expect(canvas).toBeTruthy();
+		expect(() => {
+			fireEvent.pointerDown(canvas, {
+				pointerId: 9,
+				clientX: 10,
+				clientY: 10,
+				button: 0,
+				buttons: 1,
+				bubbles: true,
+			});
+			fireEvent.pointerMove(canvas, {
+				pointerId: 9,
+				clientX: 24,
+				clientY: 18,
+				buttons: 1,
+				bubbles: true,
+			});
+			fireEvent.pointerUp(canvas, {
+				pointerId: 9,
+				clientX: 24,
+				clientY: 18,
+				button: 0,
+				buttons: 0,
+				bubbles: true,
+			});
+		}).not.toThrow();
+	});
 });

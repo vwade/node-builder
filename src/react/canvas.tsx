@@ -53,6 +53,12 @@ interface Drag_state {
 	camera: Camera_state;
 }
 
+type Pointer_capture_target = HTMLElement & {
+	setPointerCapture?: (pointer_id: number) => void;
+	hasPointerCapture?: (pointer_id: number) => boolean;
+	releasePointerCapture?: (pointer_id: number) => void;
+};
+
 export interface Graph_canvas_props {
 	children?: ReactNode;
 	className?: string;
@@ -215,7 +221,8 @@ export function Graph_canvas(props: Graph_canvas_props): JSX.Element {
 			return;
 		}
 		event.preventDefault();
-		event.currentTarget.setPointerCapture(event.pointerId);
+		const target = event.currentTarget as Pointer_capture_target;
+		target.setPointerCapture?.(event.pointerId);
 		drag_ref.current = {
 			pointer_id: event.pointerId,
 			origin: { x: event.clientX, y: event.clientY },
@@ -238,8 +245,12 @@ export function Graph_canvas(props: Graph_canvas_props): JSX.Element {
 		set_is_panning(false);
 	}, []);
 	const handle_pointer_up = useCallback((event: React_pointer_event<HTMLDivElement>) => {
-		if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-			event.currentTarget.releasePointerCapture(event.pointerId);
+		const target = event.currentTarget as Pointer_capture_target;
+		if (
+			target.releasePointerCapture &&
+			(!target.hasPointerCapture || target.hasPointerCapture(event.pointerId))
+		) {
+			target.releasePointerCapture(event.pointerId);
 		}
 		if (drag_ref.current?.pointer_id === event.pointerId) {
 			end_pan();
