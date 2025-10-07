@@ -41,22 +41,20 @@ describe('Graph_node_layer', () => {
 		const on_drag_end = vi.fn();
 		const selected = new Set(['node-a', 'node-b']);
 		const { container } = render(
-		<Graph_canvas>
-		<Graph_node_layer
-		nodes={SAMPLE_NODES}
-		selected_ids={selected}
-		on_drag_start={on_drag_start}
-		on_drag={on_drag}
-		on_drag_end={on_drag_end}
-		/>
-		</Graph_canvas>,
+			<Graph_canvas>
+				<Graph_node_layer
+					nodes={SAMPLE_NODES}
+					selected_ids={selected}
+					on_drag_start={on_drag_start}
+					on_drag={on_drag}
+					on_drag_end={on_drag_end}
+				/>
+			</Graph_canvas>,
 		);
+		// ...existing code...
 		const target = container.querySelector('[data-node-id="node-a"]') as HTMLElement;
-		Object.assign(target, {
-			setPointerCapture: vi.fn(),
-			releasePointerCapture: vi.fn(),
-			hasPointerCapture: () => false,
-		});
+		// No need to manually mock pointer capture methods
+		// ...existing code...
 		fireEvent.pointerDown(target, {
 			pointerId: 1,
 			clientX: 200,
@@ -96,16 +94,12 @@ describe('Graph_node_layer', () => {
 	test('scales drag deltas according to the camera zoom', () => {
 		const on_drag = vi.fn();
 		const { container } = render(
-		<Graph_canvas initial_camera={{ scale: 2 }}>
-		<Graph_node_layer nodes={SAMPLE_NODES} on_drag={on_drag} />
-		</Graph_canvas>,
+			<Graph_canvas initial_camera={{ scale: 2 }}>
+				<Graph_node_layer nodes={SAMPLE_NODES} on_drag={on_drag} />
+			</Graph_canvas>,
 		);
 		const target = container.querySelector('[data-node-id="node-a"]') as HTMLElement;
-		Object.assign(target, {
-			setPointerCapture: vi.fn(),
-			releasePointerCapture: vi.fn(),
-			hasPointerCapture: () => false,
-		});
+		// No need to manually mock pointer capture methods
 		fireEvent.pointerDown(target, {
 			pointerId: 5,
 			clientX: 100,
