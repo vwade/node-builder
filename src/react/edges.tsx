@@ -3,6 +3,8 @@ import type { CSSProperties, JSX, ReactNode } from 'react';
 import type { Edge, Node } from '../core/types.js';
 import type { Graph_connection_preview } from './nodes.js';
 import type { Point } from './camera.js';
+import { route_edge } from './edge-routing.js';
+import type { Edge_anchor } from './edge-routing.js';
 import type { Port_geometry } from './ports.js';
 import { build_port_geometry_map } from './ports.js';
 
@@ -11,11 +13,6 @@ const DEFAULT_NODE_HEIGHT = 104;
 const DEFAULT_STROKE = '#38bdf8';
 const DEFAULT_STROKE_WIDTH = 2;
 const PREVIEW_STROKE = '#f97316';
-
-interface Edge_anchor {
-	position: Point;
-	normal: Point;
-}
 
 export interface Graph_edge_render_state {
 	preview?: boolean;
@@ -55,22 +52,6 @@ function offset_anchor(geometry: Port_geometry, distance = 12): Edge_anchor {
 		},
 		normal: geometry.normal,
 	};
-}
-
-function curve_path(start: Point, end: Point, from_normal: Point, to_normal: Point): string {
-	const dx = end.x - start.x;
-	const dy = end.y - start.y;
-	const span = Math.hypot(dx, dy);
-	const handle = Math.max(40, span * 0.45);
-	const control_a = {
-		x: start.x + from_normal.x * handle,
-		y: start.y + from_normal.y * handle,
-	};
-	const control_b = {
-		x: end.x - to_normal.x * handle,
-		y: end.y - to_normal.y * handle,
-	};
-	return `M ${start.x} ${start.y} C ${control_a.x} ${control_a.y} ${control_b.x} ${control_b.y} ${end.x} ${end.y}`;
 }
 
 export function Graph_edge_layer<T>(props: Graph_edge_layer_props<T>): JSX.Element {
@@ -128,7 +109,7 @@ export function Graph_edge_layer<T>(props: Graph_edge_layer_props<T>): JSX.Eleme
 	return (
 		<svg className={className} style={svg_style} aria-hidden="true">
 			{segments.map((segment) => {
-				const path = curve_path(segment.from.position, segment.to.position, segment.from.normal, segment.to.normal);
+				const route = route_edge(segment.from, segment.to);
 				if (render_edge) {
 					return (
 						<g key={segment.edge.id}>
@@ -139,7 +120,7 @@ export function Graph_edge_layer<T>(props: Graph_edge_layer_props<T>): JSX.Eleme
 				return (
 					<path
 						key={segment.edge.id}
-						d={path}
+						d={route.path}
 						fill="none"
 						stroke={DEFAULT_STROKE}
 						strokeWidth={DEFAULT_STROKE_WIDTH}
@@ -162,10 +143,13 @@ export function Graph_edge_layer<T>(props: Graph_edge_layer_props<T>): JSX.Eleme
 						target_normal = anchor.normal;
 					}
 				}
-				const preview_path = curve_path(from_anchor.position, target_position, from_anchor.normal, target_normal);
+				const preview_route = route_edge(
+					from_anchor,
+					{ position: target_position, normal: target_normal },
+				);
 				return (
 					<path
-						d={preview_path}
+						d={preview_route.path}
 						fill="none"
 						stroke={preview_stroke}
 						strokeWidth={preview_stroke_width}
