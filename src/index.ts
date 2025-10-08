@@ -7,3 +7,5 @@ export * from './core/selection.js';
 export * from './react/camera.js';
 export * from './react/canvas.js';
 export * from './react/nodes.js';
+export * from './react/edges.js';
+export * from './react/ports.js';

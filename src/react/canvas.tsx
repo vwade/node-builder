@@ -24,11 +24,12 @@ export interface Graph_viewport {
 }
 
 export interface Graph_camera_context_value {
-	camera: Camera_state;
-	viewport: Graph_viewport;
-	limits: Camera_limits;
-	set_camera: (next: Camera_state | ((current: Camera_state) => Camera_state)) => void;
-	reset_camera: () => void;
+camera: Camera_state;
+viewport: Graph_viewport;
+limits: Camera_limits;
+set_camera: (next: Camera_state | ((current: Camera_state) => Camera_state)) => void;
+reset_camera: () => void;
+client_to_world: (client_x: number, client_y: number) => Point;
 }
 
 const Graph_camera_context = createContext<Graph_camera_context_value | null>(null);
@@ -262,6 +263,22 @@ export function Graph_canvas(props: Graph_canvas_props): JSX.Element {
 	const handle_double_click = useCallback(() => {
 		reset();
 	}, [reset]);
+	const client_to_world = useCallback(
+		(client_x: number, client_y: number) => {
+			const container = container_ref.current;
+			if (!container) {
+				return { x: client_x, y: client_y };
+			}
+			const rect = container.getBoundingClientRect();
+			const local_x = client_x - rect.left;
+			const local_y = client_y - rect.top;
+			return {
+				x: (local_x - camera.x) / camera.scale,
+				y: (local_y - camera.y) / camera.scale,
+			};
+		},
+		[camera],
+	);
 	const container_style: CSSProperties = {
 		position: 'relative',
 		overflow: 'hidden',
@@ -278,13 +295,17 @@ export function Graph_canvas(props: Graph_canvas_props): JSX.Element {
 		transformOrigin: '0 0',
 		transform: `translate(${camera.x}px, ${camera.y}px) scale(${camera.scale})`,
 	};
-	const context_value = useMemo<Graph_camera_context_value>(() => ({
-		camera,
-		viewport,
-		limits: resolved_limits,
-		set_camera,
-		reset_camera: reset,
-	}), [camera, viewport, resolved_limits, set_camera, reset]);
+	const context_value = useMemo<Graph_camera_context_value>(
+		() => ({
+			camera,
+			viewport,
+			limits: resolved_limits,
+			set_camera,
+			reset_camera: reset,
+			client_to_world,
+		}),
+		[camera, viewport, resolved_limits, set_camera, reset, client_to_world],
+	);
 	return (
 		<div
 			ref={container_ref}

@@ -14,8 +14,8 @@ NovaNode is an embeddable node-graph editor built with a headless core and plugg
 
 ### Upcoming work
 
-* Wire up port handles and edge creation flows so nodes can connect interactively on the canvas.
 * Validate the edge routing approach and document how contributors can extend the interaction model.
+* Prototype routing heuristics and visual affordances ahead of the keyboard and theming passes.
 
 The repository currently contains the build and linting scaffold for the TypeScript codebase. Bundles are produced through `tsup`, with linting handled by ESLint's flat config. The public API surface will be expanded incrementally as core features land.
 
@@ -57,8 +57,8 @@ ghlighted, and future milestones remain unchecked so contributors can anticipate
 5. [x] Selection model
 6. [x] React adapter bootstrap
 7. [x] Node view & dragging
-8. [ ] **Ports & edge creation** *(in progress — next up)*
-9. [ ] Edge routing (straight → quad curve)
+8. [x] Ports & edge creation
+9. [ ] **Edge routing (straight → quad curve)** *(in progress — next up)*
 10. [ ] Keyboard layer
 11. [ ] Theme tokens & CSS
 12. [ ] Import/Export API
@@ -69,13 +69,14 @@ ghlighted, and future milestones remain unchecked so contributors can anticipate
 17. [ ] Accessibility & ARIA pass
 18. [ ] Performance pass
 19. [ ] Docs & Storybook
-20. [ ] Release & SemVer
+20. [ ] Norminette
+21. [ ] Release & SemVer
 
-Each task will be tackled sequentially to maintain a stable, testable feature set. With draggable nodes in place, the next tangible deliverable is the ports and edge-creation workflow, which opens the door for routing, keyboard, and collaboration layers.
+Each task will be tackled sequentially to maintain a stable, testable feature set. With draggable nodes in place, the next tangible deliverable is the ports and edge-creation workflow, which opens the door for routing, keyboard, and collaboration layers. At the end, *Norminette* to ensure proper `\t` and formatting is used - style and structure can be confirmed after all of the heavy lifting is finished.
 
 ## Next steps
 
-With draggable node surfaces shipped, the focus shifts to **Ports & edge creation** so canvases can establish connections. From there the team will move to **Edge routing**, locking in the visual polish needed before keyboard and theming layers land.
+With interactive ports and connection flows shipped, the focus shifts to **Edge routing** so canvases can present clean cubic links before the keyboard and theming layers land.
 
 ## Automation roadmap
 

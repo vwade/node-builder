@@ -22,6 +22,29 @@ const SAMPLE_NODES: Node[] = [
 	},
 ];
 
+const PORT_NODES: Node[] = [
+	{
+		id: 'node-a',
+		type: 'Alpha',
+		x: 40,
+		y: 40,
+		ports: [
+			{ id: 'node-a-out', node_id: 'node-a', side: 'right', kind: 'out', index: 0 },
+			{ id: 'node-a-in', node_id: 'node-a', side: 'left', kind: 'in', index: 0 },
+		],
+	},
+	{
+		id: 'node-b',
+		type: 'Beta',
+		x: 240,
+		y: 120,
+		ports: [
+			{ id: 'node-b-in', node_id: 'node-b', side: 'left', kind: 'in', index: 0 },
+			{ id: 'node-b-out', node_id: 'node-b', side: 'right', kind: 'out', index: 0 },
+		],
+	},
+];
+
 describe('Graph_node_layer', () => {
 	test('renders nodes with the default surface', () => {
 		render(
@@ -152,5 +175,99 @@ describe('Graph_node_layer', () => {
 				bubbles: true,
 			});
 		}).not.toThrow();
+	});
+
+	test('emits connection events when linking ports', () => {
+		const on_complete = vi.fn();
+		const on_preview = vi.fn();
+		const on_cancel = vi.fn();
+		const { container } = render(
+			<Graph_canvas>
+				<Graph_node_layer
+					nodes={PORT_NODES}
+					on_connection_complete={on_complete}
+					on_connection_preview={on_preview}
+					on_connection_cancel={on_cancel}
+				/>
+			</Graph_canvas>,
+		);
+		const source = container.querySelector('[data-port-id="node-a-out"]') as HTMLElement;
+		const target = container.querySelector('[data-port-id="node-b-in"]') as HTMLElement;
+		expect(source).toBeTruthy();
+		expect(target).toBeTruthy();
+		fireEvent.pointerDown(source, {
+			pointerId: 21,
+			clientX: 260,
+			clientY: 160,
+			button: 0,
+			buttons: 1,
+			bubbles: true,
+		});
+		fireEvent.pointerMove(window, {
+			pointerId: 21,
+			clientX: 360,
+			clientY: 200,
+			buttons: 1,
+		});
+		fireEvent.pointerEnter(target, {
+			pointerId: 21,
+			clientX: 360,
+			clientY: 200,
+			buttons: 1,
+		});
+		fireEvent.pointerUp(target, {
+			pointerId: 21,
+			clientX: 360,
+			clientY: 200,
+			button: 0,
+			buttons: 0,
+			bubbles: true,
+		});
+		expect(on_preview).toHaveBeenCalled();
+		expect(on_cancel).not.toHaveBeenCalled();
+		expect(on_complete).toHaveBeenCalledTimes(1);
+		const payload = on_complete.mock.calls[0]?.[0];
+		expect(payload?.from.node.id).toBe('node-a');
+		expect(payload?.to.node.id).toBe('node-b');
+		expect(payload?.from.port.id).toBe('node-a-out');
+		expect(payload?.to.port.id).toBe('node-b-in');
+	});
+
+	test('cancels connection when releasing away from a target', () => {
+		const on_complete = vi.fn();
+		const on_cancel = vi.fn();
+		const { container } = render(
+			<Graph_canvas>
+				<Graph_node_layer
+					nodes={PORT_NODES}
+					on_connection_complete={on_complete}
+					on_connection_cancel={on_cancel}
+				/>
+			</Graph_canvas>,
+		);
+		const source = container.querySelector('[data-port-id="node-a-out"]') as HTMLElement;
+		fireEvent.pointerDown(source, {
+			pointerId: 33,
+			clientX: 260,
+			clientY: 160,
+			button: 0,
+			buttons: 1,
+			bubbles: true,
+		});
+		fireEvent.pointerMove(window, {
+			pointerId: 33,
+			clientX: 420,
+			clientY: 220,
+			buttons: 1,
+		});
+		fireEvent.pointerUp(window, {
+			pointerId: 33,
+			clientX: 420,
+			clientY: 220,
+			button: 0,
+			buttons: 0,
+		});
+		expect(on_complete).not.toHaveBeenCalled();
+		expect(on_cancel).toHaveBeenCalledTimes(1);
 	});
 });
