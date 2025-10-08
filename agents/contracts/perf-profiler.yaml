@@ -1,0 +1,44 @@
+agent_id: perf-profiler
+version: 0.1.0
+summary: "Captures frame timing snapshots for large graph scenarios."
+owners: ["@perf-owners"]
+triggers:
+	- type: github_event
+		event: push
+		branches: [main]
+	- type: issue_comment
+		command: "/perf snap"
+capabilities:
+	- capture_webgl_frames
+	- collect_perf_metrics
+	- upload_artifacts
+inputs:
+	- type: repository_checkout
+	- type: perf_scenario_config
+outputs:
+	- type: artifact_bundle
+	- type: workflow_summary
+writes_allowed:
+	- path: "agents/artifacts/perf/**"
+forbidden_paths:
+	- "src/**"
+	- "docs/**"
+review_policy:
+	mode: pr_required
+	reviewers:
+		- "@perf-owners"
+observability:
+	metrics:
+		- "frame_time_average_ms"
+		- "frame_time_p95_ms"
+	logs: "agents/artifacts/perf/logs/%Y-%m-%d.jsonl"
+security:
+	permissions:
+		contents: read
+		actions: write
+		pull-requests: read
+		issues: write
+	secrets: []
+change_management:
+	semver_bump_requires:
+		- owners_approval

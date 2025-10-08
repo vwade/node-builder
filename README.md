@@ -14,8 +14,8 @@ NovaNode is an embeddable node-graph editor built with a headless core and plugg
 
 ### Upcoming work
 
-* Wire up port handles and edge creation flows so nodes can connect interactively on the canvas.
 * Validate the edge routing approach and document how contributors can extend the interaction model.
+* Prototype routing heuristics and visual affordances ahead of the keyboard and theming passes.
 
 The repository currently contains the build and linting scaffold for the TypeScript codebase. Bundles are produced through `tsup`, with linting handled by ESLint's flat config. The public API surface will be expanded incrementally as core features land.
 
@@ -57,8 +57,8 @@ ghlighted, and future milestones remain unchecked so contributors can anticipate
 5. [x] Selection model
 6. [x] React adapter bootstrap
 7. [x] Node view & dragging
-8. [ ] **Ports & edge creation** *(in progress — next up)*
-9. [ ] Edge routing (straight → quad curve)
+8. [x] Ports & edge creation
+9. [ ] **Edge routing (straight → quad curve)** *(in progress — next up)*
 10. [ ] Keyboard layer
 11. [ ] Theme tokens & CSS
 12. [ ] Import/Export API
@@ -75,17 +75,29 @@ Each task will be tackled sequentially to maintain a stable, testable feature se
 
 ## Next steps
 
-With draggable node surfaces shipped, the focus shifts to **Ports & edge creation** so canvases can establish connections. From there the team will move to **Edge routing**, locking in the visual polish needed before keyboard and theming layers land.
+With interactive ports and connection flows shipped, the focus shifts to **Edge routing** so canvases can present clean cubic links before the keyboard and theming layers land.
 
 ## Automation roadmap
 
 Agent automation lives alongside the product roadmap. The next three initiatives keep the internal bots aligned with repository needs:
 
 * [x] Promote `docs-bot` from suggestion-only comments to gated pull requests for documentation updates (now ships gated PRs).
-* Extend `perf-profiler` with WebGL frame-time capture so large graph scenarios stay within targets.
+* [x] Extend `perf-profiler` with WebGL frame-time capture so large graph scenarios stay within targets (ships `/perf snap`).
 * Expand `layout-lab` to benchmark orthogonal versus force-directed routing strategies.
 
 These milestones are tracked in `AGENTS.md` and ensure our tooling evolves in lockstep with the editor experience.
+
+### Perf snapshots
+
+The new **perf-profiler** agent captures a headless Chromium run of the large graph scenario and records frame-time metrics. It runs automatically on pushes to `main` and can be invoked on pull requests by commenting `/perf snap`. The workflow uploads a JSON payload and Markdown summary under `agents/artifacts/perf/<timestamp>/`, making it easy to track regressions over time.
+
+For local validation run:
+
+```bash
+npm run agents:perf
+```
+
+This executes `agents/scripts/run_perf_profiler.mjs`, which bundles the configured scenario, launches Playwright, and enforces the average and 95th percentile frame budgets declared by the scenario fixture.
 
 ## Contributing
 
