@@ -69,9 +69,10 @@ ghlighted, and future milestones remain unchecked so contributors can anticipate
 17. [ ] Accessibility & ARIA pass
 18. [ ] Performance pass
 19. [ ] Docs & Storybook
-20. [ ] Release & SemVer
+20. [ ] Norminette
+21. [ ] Release & SemVer
 
-Each task will be tackled sequentially to maintain a stable, testable feature set. With draggable nodes in place, the next tangible deliverable is the ports and edge-creation workflow, which opens the door for routing, keyboard, and collaboration layers.
+Each task will be tackled sequentially to maintain a stable, testable feature set. With draggable nodes in place, the next tangible deliverable is the ports and edge-creation workflow, which opens the door for routing, keyboard, and collaboration layers. At the end, *Norminette* to ensure proper `\t` and formatting is used - style and structure can be confirmed after all of the heavy lifting is finished.
 
 ## Next steps
 
