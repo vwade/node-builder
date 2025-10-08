@@ -78,7 +78,7 @@ Each task will be tackled sequentially to maintain a stable, testable feature se
 
 ## Next steps
 
-With interactive ports and connection flows shipped, the focus stays on **Edge routing**. The new routing helper blends straight connectors into quadratic curves, while the camera fitting helper ensures the canvas can frame arbitrary graph bounds, clearing the way for curvature heuristics and obstacle-aware experiments before the keyboard and theming layers land.
+With interactive ports and connection flows shipped, the focus stays on **Edge routing**. The new camera fitting helper ensures the canvas can frame arbitrary graph bounds, clearing the way for routing experiments before the keyboard and theming layers land.
 
 ## Automation roadmap
 
