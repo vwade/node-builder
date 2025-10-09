@@ -39,6 +39,32 @@ export interface Edge_route_options {
 	ignore_obstacle_ids?: string[];
 }
 
+export interface Edge_route_diagnostics_options {
+	/** Number of samples collected across the resolved path. */
+	samples?: number;
+	/**
+	 * Optional obstacle list override. When omitted the router's obstacle set
+	 * (after padding) is used for diagnostics.
+	 */
+	obstacles?: Edge_obstacle[];
+	/** Extra padding applied when expanding diagnostic obstacle regions. */
+	obstacle_padding?: number;
+}
+
+export interface Edge_route_obstacle_hit {
+	obstacle: Edge_obstacle;
+	point: Point;
+	sample_index: number;
+}
+
+export interface Edge_route_diagnostics {
+	samples: Point[];
+	obstacle_hits: Edge_route_obstacle_hit[];
+	intersects: boolean;
+	min_clearance: number;
+	total_length: number;
+}
+
 export interface Edge_route_metrics {
 	curvature: number;
 	distance: number;
@@ -60,6 +86,7 @@ const DEFAULT_MIN_HANDLE = 40;
 const DEFAULT_HANDLE_RATIO = 0.45;
 const DEFAULT_OBSTACLE_PADDING = 12;
 const DEFAULT_OBSTACLE_SAMPLES = 12;
+const DEFAULT_DIAGNOSTIC_SAMPLES = 24;
 const STRAIGHT_ALIGNMENT_THRESHOLD = 0.9;
 const STRAIGHT_DISTANCE_THRESHOLD = 32;
 const STRAIGHT_CURVATURE_THRESHOLD = 0.15;
@@ -170,6 +197,98 @@ export function route_edge(
 		resolved_curvature = route.metrics?.curvature ?? resolved_curvature;
 	}
 	return route;
+}
+
+
+export function diagnose_edge_route(
+	from: Edge_anchor,
+	to: Edge_anchor,
+	route: Edge_route_result,
+	options: Edge_route_diagnostics_options = {},
+): Edge_route_diagnostics {
+	const sample_count = Math.max(2, Math.floor(options.samples ?? DEFAULT_DIAGNOSTIC_SAMPLES));
+	const diagnostics_obstacles = options.obstacles ?? [];
+	const padded_obstacles = diagnostics_obstacles.length
+		? expand_obstacles(diagnostics_obstacles, options.obstacle_padding ?? 0)
+		: diagnostics_obstacles;
+	const points = sample_route_points(route, from.position, to.position, sample_count);
+	const obstacle_hits: Edge_route_obstacle_hit[] = [];
+	let min_clearance = Number.POSITIVE_INFINITY;
+	for (let index = 0; index < points.length; index += 1) {
+		const point = points[index];
+		for (const obstacle of padded_obstacles) {
+			if (point_in_rect(point, obstacle)) {
+				obstacle_hits.push({ obstacle, point, sample_index: index });
+				min_clearance = 0;
+				continue;
+			}
+			const distance = distance_to_rect(point, obstacle);
+			if (distance < min_clearance) {
+				min_clearance = distance;
+			}
+		}
+	}
+	if (!diagnostics_obstacles.length) {
+		min_clearance = Number.POSITIVE_INFINITY;
+	}
+	const total_length = compute_path_length(points);
+	return {
+		samples: points,
+		obstacle_hits,
+		intersects: obstacle_hits.length > 0,
+		min_clearance,
+		total_length,
+	};
+}
+
+function sample_route_points(
+	route: Edge_route_result,
+	from: Point,
+	to: Point,
+	samples: number,
+): Point[] {
+	if (route.kind === 'quadratic') {
+		const control = route.control ?? parse_quadratic_control(route.path);
+		if (control) {
+			return sample_quadratic(from, control, to, samples);
+		}
+	}
+	return sample_line(from, to, samples);
+}
+
+function parse_quadratic_control(path: string): Point | null {
+	const match = path.match(/Q ([^ ]+) ([^ ]+) [^ ]+ [^ ]+/);
+	if (!match) {
+		return null;
+	}
+	const x = Number(match[1]);
+	const y = Number(match[2]);
+	if (Number.isNaN(x) || Number.isNaN(y)) {
+		return null;
+	}
+	return { x, y };
+}
+
+function sample_line(from: Point, to: Point, samples: number): Point[] {
+	const points: Point[] = [];
+	for (let step = 0; step <= samples; step += 1) {
+		const t = samples === 0 ? 0 : step / samples;
+		points.push({
+			x: from.x + (to.x - from.x) * t,
+			y: from.y + (to.y - from.y) * t,
+		});
+	}
+	return points;
+}
+
+function compute_path_length(points: Point[]): number {
+	let length = 0;
+	for (let index = 0; index < points.length - 1; index += 1) {
+		const current = points[index];
+		const next = points[index + 1];
+		length += Math.hypot(next.x - current.x, next.y - current.y);
+	}
+	return length;
 }
 
 function normalize(vector: Point): Point {
@@ -569,6 +688,12 @@ function merge_route_metrics(
 		to_alignment: updates.to_alignment ?? source?.to_alignment ?? 0,
 		average_alignment: updates.average_alignment ?? source?.average_alignment ?? 0,
 	};
+}
+
+function distance_to_rect(point: Point, rect: Edge_obstacle): number {
+	const dx = Math.max(rect.x - point.x, 0, point.x - (rect.x + rect.width));
+	const dy = Math.max(rect.y - point.y, 0, point.y - (rect.y + rect.height));
+	return Math.hypot(dx, dy);
 }
 
 function point_in_rect(point: Point, rect: Edge_obstacle): boolean {

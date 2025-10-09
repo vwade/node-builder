@@ -3,8 +3,15 @@ import type { CSSProperties, JSX, ReactNode } from 'react';
 import type { Edge, Node } from '../core/types.js';
 import type { Graph_connection_preview } from './nodes.js';
 import type { Point } from './camera.js';
-import { route_edge } from './edge-routing.js';
-import type { Edge_anchor, Edge_obstacle, Edge_route_options, Edge_route_result } from './edge-routing.js';
+import { diagnose_edge_route, route_edge } from './edge-routing.js';
+import type {
+	Edge_anchor,
+	Edge_obstacle,
+	Edge_route_diagnostics,
+	Edge_route_diagnostics_options,
+	Edge_route_options,
+	Edge_route_result,
+} from './edge-routing.js';
 import type { Port_geometry } from './ports.js';
 import { build_port_geometry_map } from './ports.js';
 import { build_node_obstacles } from './obstacles.js';
@@ -25,6 +32,7 @@ export interface Graph_edge_render_args<T = unknown> {
 	from: Edge_anchor;
 	to: Edge_anchor;
 	route: Edge_route_result;
+	diagnostics?: Edge_route_diagnostics;
 	state: Graph_edge_render_state;
 }
 
@@ -57,6 +65,7 @@ export interface Graph_edge_layer_props<T = unknown> {
 	preview_stroke_width?: number;
 	obstacles?: Edge_obstacle[];
 	obstacle_padding?: number;
+	diagnostics?: boolean | Edge_route_diagnostics_options;
 }
 
 interface Edge_segment<T = unknown> {
@@ -91,7 +100,9 @@ export function Graph_edge_layer<T>(props: Graph_edge_layer_props<T>): JSX.Eleme
 		preview_stroke_width = DEFAULT_STROKE_WIDTH,
 		obstacles: custom_obstacles,
 		obstacle_padding,
+		diagnostics: diagnostics_config,
 	} = props;
+
 	const resolved_width = default_width ?? DEFAULT_NODE_WIDTH;
 	const resolved_height = default_height ?? DEFAULT_NODE_HEIGHT;
 	const resolved_obstacle_padding = obstacle_padding ?? DEFAULT_OBSTACLE_PADDING;
@@ -158,7 +169,20 @@ export function Graph_edge_layer<T>(props: Graph_edge_layer_props<T>): JSX.Eleme
 					preview: false,
 					ignore_obstacle_ids: ignore_ids,
 				};
-				const route = resolve_route(context, router, route_options, resolved_obstacles, resolved_obstacle_padding);
+				const route = resolve_route(
+					context,
+					router,
+					route_options,
+					resolved_obstacles,
+					resolved_obstacle_padding,
+				);
+				const diagnostics = resolve_diagnostics(
+					context,
+					route,
+					diagnostics_config,
+					resolved_obstacles,
+					resolved_obstacle_padding,
+				);
 				if (render_edge) {
 					return (
 						<g key={segment.edge.id}>
@@ -167,6 +191,7 @@ export function Graph_edge_layer<T>(props: Graph_edge_layer_props<T>): JSX.Eleme
 								from: segment.from,
 								to: segment.to,
 								route,
+								diagnostics,
 								state: { preview: false },
 							})}
 						</g>
@@ -252,6 +277,36 @@ function resolve_route<T>(
 		context.ignore_obstacle_ids,
 	);
 	return route_edge(context.from, context.to, resolved_options);
+}
+
+function resolve_diagnostics<T>(
+	context: Graph_edge_route_context<T>,
+	route: Edge_route_result,
+	diagnostics: boolean | Edge_route_diagnostics_options | undefined,
+	obstacles: Edge_obstacle[] | undefined,
+	obstacle_padding: number,
+): Edge_route_diagnostics | undefined {
+	if (!diagnostics) {
+		return undefined;
+	}
+	const options = diagnostics === true ? undefined : diagnostics;
+	const target_obstacles = options?.obstacles ?? obstacles;
+	const ignore = context.ignore_obstacle_ids && context.ignore_obstacle_ids.length
+		? new Set(context.ignore_obstacle_ids)
+		: undefined;
+	const filtered_obstacles = target_obstacles?.filter((obstacle) => {
+		if (!ignore?.size) {
+			return true;
+		}
+		return !obstacle.id || !ignore.has(obstacle.id);
+	});
+	const padding = options?.obstacle_padding ?? (options?.obstacles ? 0 : obstacle_padding);
+	const samples = options?.samples;
+	return diagnose_edge_route(context.from, context.to, route, {
+		samples,
+		obstacles: filtered_obstacles,
+		obstacle_padding: padding,
+	});
 }
 
 function resolve_route_options<T>(

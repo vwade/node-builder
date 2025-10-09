@@ -79,7 +79,7 @@ describe('Graph_edge_layer', () => {
 	});
 
 	test('passes route data to render_edge callback', () => {
-		const render_edge = vi.fn(({ route }) => <path data-testid="custom-edge" d={route.path} />);
+		const render_edge = vi.fn(({ route, diagnostics }) => <path data-testid="custom-edge" d={route.path} />);
 		const { getByTestId } = render(
 			<Graph_canvas>
 				<Graph_edge_layer nodes={EDGE_NODES} edges={EDGE_LIST} render_edge={render_edge} />
@@ -89,8 +89,23 @@ describe('Graph_edge_layer', () => {
 		const args = render_edge.mock.calls[0][0];
 		expect(args.route.path).toMatch(/^M/);
 		expect(args.route.metrics?.distance).toBeGreaterThan(0);
+		expect(args.diagnostics).toBeUndefined();
 		expect(getByTestId('custom-edge')).toBeTruthy();
 	});
+
+		test('provides diagnostics when enabled', () => {
+			const render_edge = vi.fn(({ diagnostics }) => <path data-testid="diagnostic-edge" />);
+			render(
+				<Graph_canvas>
+					<Graph_edge_layer nodes={EDGE_NODES} edges={EDGE_LIST} render_edge={render_edge} diagnostics />
+				</Graph_canvas>,
+			);
+			expect(render_edge).toHaveBeenCalled();
+			const args = render_edge.mock.calls[0][0] as Graph_edge_render_args;
+			expect(args.diagnostics).toBeDefined();
+			expect(args.diagnostics?.samples.length).toBeGreaterThan(0);
+			expect(args.diagnostics?.intersects).toBe(false);
+		});
 
 	test('allows overriding routing logic with router prop', () => {
 		const router = vi.fn(() => ({ kind: 'line', path: 'M 1 2 L 3 4' }));

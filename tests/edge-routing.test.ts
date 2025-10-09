@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { route_edge } from '../src/react/edge-routing.js';
+import { diagnose_edge_route, route_edge } from '../src/react/edge-routing.js';
 
 describe('route_edge', () => {
 	it('returns a straight line when anchors face each other closely', () => {
@@ -154,6 +154,64 @@ describe('route_edge', () => {
 		expect(blocked.path).not.toBe(baseline.path);
 		expect(ignored.path).toBe(baseline.path);
 		});
+		it('collects diagnostics for unobstructed routes', () => {
+			const from = {
+				position: { x: 0, y: 0 },
+				normal: { x: 1, y: 0 },
+			};
+			const to = {
+				position: { x: 200, y: 0 },
+				normal: { x: -1, y: 0 },
+			};
+			const route = route_edge(from, to);
+			const diagnostics = diagnose_edge_route(from, to, route, { samples: 8 });
+			expect(diagnostics.samples.length).toBeGreaterThan(0);
+			expect(diagnostics.intersects).toBe(false);
+			expect(diagnostics.min_clearance).toBe(Number.POSITIVE_INFINITY);
+			expect(diagnostics.total_length).toBeCloseTo(200);
+		});
+
+		it('detects obstacle overlaps when paths remain straight', () => {
+			const from = {
+				position: { x: 0, y: 0 },
+				normal: { x: 1, y: 0 },
+			};
+			const to = {
+				position: { x: 200, y: 0 },
+				normal: { x: -1, y: 0 },
+			};
+			const route = route_edge(from, to);
+			const obstacle = { x: 60, y: -20, width: 48, height: 40 };
+			const diagnostics = diagnose_edge_route(from, to, route, {
+				obstacles: [obstacle],
+				obstacle_padding: 0,
+				samples: 6,
+			});
+			expect(diagnostics.intersects).toBe(true);
+			expect(diagnostics.obstacle_hits.length).toBeGreaterThan(0);
+			expect(diagnostics.min_clearance).toBe(0);
+		});
+
+		it('confirms detoured routes stay clear of obstacles', () => {
+			const from = {
+				position: { x: 0, y: 0 },
+				normal: { x: 1, y: 0 },
+			};
+			const to = {
+				position: { x: 200, y: 0 },
+				normal: { x: -1, y: 0 },
+			};
+			const obstacle = { x: 80, y: -32, width: 64, height: 64 };
+			const route = route_edge(from, to, { obstacles: [obstacle], obstacle_padding: 12 });
+			const diagnostics = diagnose_edge_route(from, to, route, {
+				obstacles: [obstacle],
+				obstacle_padding: 12,
+				samples: 12,
+			});
+			expect(diagnostics.intersects).toBe(false);
+			expect(diagnostics.min_clearance).toBeGreaterThan(0);
+		});
+
 });
 
 function sample_quadratic(route: ReturnType<typeof route_edge>, t: number) {

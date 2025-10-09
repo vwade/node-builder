@@ -15,6 +15,7 @@ NovaNode is an embeddable node-graph editor built with a headless core and plugg
 * Added an edge routing helper that blends straight runs into quadratic curves so canvas edges can gradually adopt richer paths.
 * Tuned the routing helper with curvature heuristics, metadata, and React layer hooks so custom renderers can share consistent path data.
 * Enabled obstacle-aware detours by default so edges dodge node rectangles, and exported helpers for bespoke shells to feed custom obstacle maps.
+* Surfaced routing diagnostics helpers so developers can inspect sampled paths and obstacle clearance while iterating on detour heuristics.
 
 ### Upcoming work
 
@@ -136,7 +137,7 @@ Each task will be tackled sequentially to maintain a stable, testable feature se
 
 ## Next steps
 
-With interactive ports and connection flows shipped, the focus stays on **Edge routing**. The routing helper now blends straight connectors into quadratic curves, reports curvature metrics, and the React layer inflates node hitboxes so edges detour around obstacles by default (or via `build_node_obstacles` for custom shells). Route options can now declare `ignore_obstacle_ids` so start/end nodes get excluded while intermediate blockers still enforce detours. Next up: pressure-test the heuristics, expose developer diagnostics, and then tackle the keyboard and theming layers.
+With interactive ports and connection flows shipped, the focus stays on **Edge routing**. The routing helper now blends straight connectors into quadratic curves, reports curvature metrics, detours around configured obstacles, and surfaces sampled diagnostics so developers can inspect clearance and path fidelity. Next up: feed those diagnostics into lightweight overlays, benchmark the heuristics against sample graphs, and then tackle the keyboard and theming layers.
 
 ## Automation roadmap
 
