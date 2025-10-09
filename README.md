@@ -11,11 +11,14 @@ NovaNode is an embeddable node-graph editor built with a headless core and plugg
 * Completed the project scaffold and build pipeline, including TypeScript, tsup bundling, and ESLint flat config.
 * Added a GitHub Actions workflow that runs linting, build, and tests on every push or pull request against `codex-*` branches.
 * Landed the React canvas adapter with draggable node surfaces and default rendering, unlocking the upcoming edge creation work.
+* Introduced camera fitting utilities so the React viewport can center graph bounds with configurable padding ahead of the routing pass.
+* Added an edge routing helper that blends straight runs into quadratic curves so canvas edges can gradually adopt richer paths.
+* Tuned the routing helper with curvature heuristics, metadata, and React layer hooks so custom renderers can share consistent path data.
 
 ### Upcoming work
 
-* Validate the edge routing approach and document how contributors can extend the interaction model.
-* Prototype routing heuristics and visual affordances ahead of the keyboard and theming passes.
+* Benchmark the routing heuristics against sample graphs and document how contributors can extend the interaction model.
+* Prototype obstacle-aware routing cues and visual affordances ahead of the keyboard and theming passes.
 
 The repository currently contains the build and linting scaffold for the TypeScript codebase. Bundles are produced through `tsup`, with linting handled by ESLint's flat config. The public API surface will be expanded incrementally as core features land.
 
@@ -58,7 +61,7 @@ ghlighted, and future milestones remain unchecked so contributors can anticipate
 6. [x] React adapter bootstrap
 7. [x] Node view & dragging
 8. [x] Ports & edge creation
-9. [ ] **Edge routing (straight → quad curve)** *(in progress — next up)*
+9. [ ] **Edge routing (straight → quad curve)** *(in progress — camera utilities landed to prep the canvas)*
 10. [ ] Keyboard layer
 11. [ ] Theme tokens & CSS
 12. [ ] Import/Export API
@@ -76,7 +79,7 @@ Each task will be tackled sequentially to maintain a stable, testable feature se
 
 ## Next steps
 
-With interactive ports and connection flows shipped, the focus shifts to **Edge routing** so canvases can present clean cubic links before the keyboard and theming layers land.
+With interactive ports and connection flows shipped, the focus stays on **Edge routing**. The routing helper now blends straight connectors into quadratic curves, reports curvature metrics, and feeds the React layer so previews and custom renderers can share the same path data. Next up: obstacle-aware experiments before the keyboard and theming layers land.
 
 ## Automation roadmap
 

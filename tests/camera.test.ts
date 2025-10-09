@@ -3,6 +3,7 @@ import {
 	DEFAULT_CAMERA_LIMITS,
 	DEFAULT_CAMERA_STATE,
 	clamp_scale,
+	fit_camera_to_rect,
 	pan_camera,
 	reset_camera,
 	zoom_camera,
@@ -53,5 +54,35 @@ describe('camera utilities', () => {
 		const reset = reset_camera(camera, fallback);
 		expect(reset).not.toBe(camera);
 		expect(reset).toEqual(fallback);
+	});
+
+	it('fits a rectangle inside the viewport with padding', () => {
+		const camera = { x: 120, y: 80, scale: 0.5 } satisfies typeof DEFAULT_CAMERA_STATE;
+		const rect = { x: 200, y: 100, width: 400, height: 200 };
+		const viewport = { width: 800, height: 600 };
+		const fitted = fit_camera_to_rect(camera, rect, viewport, { padding: 32 });
+		const expected_scale = (viewport.width - 64) / rect.width;
+		expect(fitted.scale).toBeCloseTo(expected_scale, 5);
+		const left = (rect.x - fitted.x) * fitted.scale;
+		const right = (rect.x + rect.width - fitted.x) * fitted.scale;
+		const top = (rect.y - fitted.y) * fitted.scale;
+		const bottom = (rect.y + rect.height - fitted.y) * fitted.scale;
+		const expected_vertical_margin = 32 + (viewport.height - 64 - rect.height * expected_scale) / 2;
+		expect(left).toBeCloseTo(32, 5);
+		expect(viewport.width - right).toBeCloseTo(32, 5);
+		expect(top).toBeCloseTo(expected_vertical_margin, 5);
+		expect(viewport.height - bottom).toBeCloseTo(expected_vertical_margin, 5);
+	});
+
+	it('clamps scale when rectangle collapses to a point', () => {
+		const camera = { ...DEFAULT_CAMERA_STATE };
+		const rect = { x: 50, y: -25, width: 0, height: 0 };
+		const viewport = { width: 500, height: 400 };
+		const fitted = fit_camera_to_rect(camera, rect, viewport, {
+			limits: { ...DEFAULT_CAMERA_LIMITS, max_scale: 3 },
+		});
+		expect(fitted.scale).toBe(3);
+		expect(fitted.x).toBeCloseTo(rect.x - viewport.width / (2 * fitted.scale));
+		expect(fitted.y).toBeCloseTo(rect.y - viewport.height / (2 * fitted.scale));
 	});
 });
