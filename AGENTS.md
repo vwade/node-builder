@@ -4,7 +4,7 @@
 > Define how software agents (automation, bots, LLM‑assisted tools) are designed, named, permissioned, tested, and governed in this repository. This file is the single source of truth for agent behavior and contracts.
 
 > **Conventions**
-> tabs for indentation; `snake_case` for config keys and variables; `kebab-case` for file names; explicit SemVer; fail‑closed defaults.
+> tabs for indentation; `snake_case` for config keys and variables; `kebab-case` for file names; explicit SemVer; fail‑closed defaults. Tabs may be checked and enforced only during the Norminette stage of development, towards the end and release.
 
 ---
 

@@ -23,9 +23,20 @@ export interface Edge_route_options {
 	handle_ratio?: number;
 }
 
+export interface Edge_route_metrics {
+	curvature: number;
+	distance: number;
+	from_alignment: number;
+	to_alignment: number;
+	average_alignment: number;
+}
+
 export interface Edge_route_result {
 	kind: Edge_route_kind;
 	path: string;
+	control?: Point;
+	handles?: { from: Point; to: Point };
+	metrics?: Edge_route_metrics;
 }
 
 const DEFAULT_CURVATURE = 0.6;
@@ -33,13 +44,15 @@ const DEFAULT_MIN_HANDLE = 40;
 const DEFAULT_HANDLE_RATIO = 0.45;
 const STRAIGHT_ALIGNMENT_THRESHOLD = 0.9;
 const STRAIGHT_DISTANCE_THRESHOLD = 32;
+const STRAIGHT_CURVATURE_THRESHOLD = 0.15;
+const CURVATURE_DISTANCE_RANGE = 240;
 
 export function route_edge(
 	from: Edge_anchor,
 	to: Edge_anchor,
 	options: Edge_route_options = {},
 ): Edge_route_result {
-	const curvature = clamp01(options.curvature ?? DEFAULT_CURVATURE);
+	const base_curvature = clamp01(options.curvature ?? DEFAULT_CURVATURE);
 	const min_handle = options.min_handle ?? DEFAULT_MIN_HANDLE;
 	const handle_ratio = options.handle_ratio ?? DEFAULT_HANDLE_RATIO;
 	const delta = {
@@ -47,10 +60,18 @@ export function route_edge(
 		y: to.position.y - from.position.y,
 	};
 	const distance = Math.hypot(delta.x, delta.y);
+	const metrics: Edge_route_metrics = {
+		curvature: 0,
+		distance,
+		from_alignment: 0,
+		to_alignment: 0,
+		average_alignment: 0,
+	};
 	if (!Number.isFinite(distance) || distance === 0) {
 		return {
 			kind: 'line',
 			path: `M ${from.position.x} ${from.position.y} L ${to.position.x} ${to.position.y}`,
+			metrics,
 		};
 	}
 	const unit = { x: delta.x / distance, y: delta.y / distance };
@@ -58,18 +79,34 @@ export function route_edge(
 	const to_normal = normalize(to.normal);
 	const from_alignment = dot(from_normal, unit);
 	const to_alignment = -dot(to_normal, unit);
+	metrics.from_alignment = from_alignment;
+	metrics.to_alignment = to_alignment;
+	const average_alignment = clamp01((from_alignment + to_alignment) / 2);
+	metrics.average_alignment = average_alignment;
+	const misalignment = 1 - average_alignment;
+	const distance_factor = clamp01((distance - STRAIGHT_DISTANCE_THRESHOLD) / CURVATURE_DISTANCE_RANGE);
+	const resolved_curvature = clamp01(
+		base_curvature * (0.35 + misalignment * 0.65) +
+			misalignment * 0.45 +
+			distance_factor * 0.2,
+	);
+	metrics.curvature = resolved_curvature;
 	if (
-		curvature <= Number.EPSILON ||
+		resolved_curvature <= Number.EPSILON ||
 		(distance <= STRAIGHT_DISTANCE_THRESHOLD &&
 			from_alignment >= STRAIGHT_ALIGNMENT_THRESHOLD &&
-			to_alignment >= STRAIGHT_ALIGNMENT_THRESHOLD)
+			to_alignment >= STRAIGHT_ALIGNMENT_THRESHOLD) ||
+		(average_alignment >= STRAIGHT_ALIGNMENT_THRESHOLD &&
+			resolved_curvature < STRAIGHT_CURVATURE_THRESHOLD)
 	) {
+		metrics.curvature = 0;
 		return {
 			kind: 'line',
 			path: `M ${from.position.x} ${from.position.y} L ${to.position.x} ${to.position.y}`,
+			metrics,
 		};
 	}
-	const handle_length = Math.max(min_handle, distance * handle_ratio * curvature);
+	const handle_length = Math.max(min_handle, distance * handle_ratio * resolved_curvature);
 	const from_handle = {
 		x: from.position.x + from_normal.x * handle_length,
 		y: from.position.y + from_normal.y * handle_length,
@@ -85,6 +122,12 @@ export function route_edge(
 	return {
 		kind: 'quadratic',
 		path: `M ${from.position.x} ${from.position.y} Q ${control.x} ${control.y} ${to.position.x} ${to.position.y}`,
+		control,
+		handles: {
+			from: from_handle,
+			to: to_handle,
+		},
+		metrics,
 	};
 }
 

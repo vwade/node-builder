@@ -1,5 +1,5 @@
 import { render } from '@testing-library/react';
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test, vi } from 'vitest';
 import type { Edge, Node } from '../src/core/types.js';
 import { Graph_canvas } from '../src/react/canvas.js';
 import { Graph_edge_layer } from '../src/react/edges.js';
@@ -75,5 +75,31 @@ describe('Graph_edge_layer', () => {
 		const preview_path = container.querySelector('path[stroke="#f97316"]');
 		expect(preview_path).toBeTruthy();
 		expect(preview_path?.getAttribute('stroke-dasharray')).toBe('8 6');
+	});
+
+	test('passes route data to render_edge callback', () => {
+		const render_edge = vi.fn(({ route }) => <path data-testid="custom-edge" d={route.path} />);
+		const { getByTestId } = render(
+			<Graph_canvas>
+				<Graph_edge_layer nodes={EDGE_NODES} edges={EDGE_LIST} render_edge={render_edge} />
+			</Graph_canvas>,
+		);
+		expect(render_edge).toHaveBeenCalled();
+		const args = render_edge.mock.calls[0][0];
+		expect(args.route.path).toMatch(/^M/);
+		expect(args.route.metrics?.distance).toBeGreaterThan(0);
+		expect(getByTestId('custom-edge')).toBeTruthy();
+	});
+
+	test('allows overriding routing logic with router prop', () => {
+		const router = vi.fn(() => ({ kind: 'line', path: 'M 1 2 L 3 4' }));
+		const { container } = render(
+			<Graph_canvas>
+				<Graph_edge_layer nodes={EDGE_NODES} edges={EDGE_LIST} router={router} />
+			</Graph_canvas>,
+		);
+		expect(router).toHaveBeenCalled();
+		const path = container.querySelector('path');
+		expect(path?.getAttribute('d')).toBe('M 1 2 L 3 4');
 	});
 });
