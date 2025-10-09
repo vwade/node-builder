@@ -11,11 +11,15 @@ NovaNode is an embeddable node-graph editor built with a headless core and plugg
 * Completed the project scaffold and build pipeline, including TypeScript, tsup bundling, and ESLint flat config.
 * Added a GitHub Actions workflow that runs linting, build, and tests on every push or pull request against `codex-*` branches.
 * Landed the React canvas adapter with draggable node surfaces and default rendering, unlocking the upcoming edge creation work.
+* Introduced camera fitting utilities so the React viewport can center graph bounds with configurable padding ahead of the routing pass.
+* Added an edge routing helper that blends straight runs into quadratic curves so canvas edges can gradually adopt richer paths.
+* Tuned the routing helper with curvature heuristics, metadata, and React layer hooks so custom renderers can share consistent path data.
+* Enabled obstacle-aware detours by default so edges dodge node rectangles, and exported helpers for bespoke shells to feed custom obstacle maps.
 
 ### Upcoming work
 
-* Validate the edge routing approach and document how contributors can extend the interaction model.
-* Prototype routing heuristics and visual affordances ahead of the keyboard and theming passes.
+* Benchmark the routing heuristics against sample graphs and document how contributors can extend the interaction model.
+* Benchmark the obstacle heuristics, surface routing diagnostics in dev builds, and line up keyboard/theming layers.
 
 The repository currently contains the build and linting scaffold for the TypeScript codebase. Bundles are produced through `tsup`, with linting handled by ESLint's flat config. The public API surface will be expanded incrementally as core features land.
 
@@ -28,6 +32,62 @@ npm run lint
 ```
 
 These commands generate the library bundles under `dist/` and run the lint checks. Additional scripts (tests, demo) will be introduced as the implementation progresses.
+
+## Embedding in a custom UX
+
+The React adapter ships with everything needed to wire NovaNode into a bespoke interface. To try the current canvas in a fresh UX shell:
+
+1. Scaffold a React workspace (for example with `npm create vite@latest my-graph -- --template react-ts`) and install NovaNode with `npm install nova-node` or a local file reference while developing.
+2. Model your graph state with `useState` (or a preferred store) using the exported `Node`, `Edge`, and helper utilities from `src/core`. Start with a handful of sample nodes and edges so you can iterate on visuals quickly.
+3. Wrap your canvas region with `<Graph_canvas>` to provide camera context, then render `<Graph_node_layer>` and `<Graph_edge_layer>` as siblings inside it. Pass the live node and edge arrays plus any callbacks for drag, selection, or connection preview handling.
+4. Forward connection previews from `Graph_node_layer` into `Graph_edge_layer` so in-progress edges reuse the same routing helper that finished edges do. The preview payload can also drive custom HUD or inspector UIs.
+5. Customize the render callbacks to blend NovaNode's logic into your house style—swap the default node surface, ports, and edges for your branded components while retaining the underlying interaction model.
+
+```tsx
+import { useState } from 'react';
+import {
+	Graph_canvas,
+	Graph_node_layer,
+	Graph_edge_layer,
+	type Edge,
+	type Node,
+} from 'nova-node';
+
+export function My_graph(): JSX.Element {
+	const [nodes, set_nodes] = useState<Node[]>([
+		{ id: 'a', type: 'Input', position: { x: 120, y: 160 }, ports: [] },
+		{ id: 'b', type: 'Output', position: { x: 420, y: 260 }, ports: [] },
+	]);
+	const [edges, set_edges] = useState<Edge[]>([]);
+	const [preview, set_preview] = useState(null);
+
+	return (
+		<Graph_canvas className="graph-surface">
+			<Graph_edge_layer
+				nodes={nodes}
+				edges={edges}
+				preview={preview}
+			/>
+			<Graph_node_layer
+				nodes={nodes}
+				on_connection_preview={set_preview}
+				on_connection_complete={({ from, to }) => {
+					set_edges((current) => [
+						...current,
+						{
+							id: `edge-${current.length + 1}`,
+							from: { node_id: from.node.id, port_id: from.port.id },
+							to: { node_id: to.node.id, port_id: to.port.id },
+						},
+					]);
+				}}
+			/>
+		</Graph_canvas>
+	);
+}
+```
+
+With this scaffold in place you can iterate on layout, theming, and command surfaces while leaning on the existing routing and camera helpers. Drop the component into your preferred shell (Next.js route, design system story, or internal playground) to see the current feature set in motion.
 
 ## Continuous integration
 
@@ -58,7 +118,7 @@ ghlighted, and future milestones remain unchecked so contributors can anticipate
 6. [x] React adapter bootstrap
 7. [x] Node view & dragging
 8. [x] Ports & edge creation
-9. [ ] **Edge routing (straight → quad curve)** *(in progress — next up)*
+9. [ ] **Edge routing (straight → quad curve)** *(in progress — camera utilities landed to prep the canvas)*
 10. [ ] Keyboard layer
 11. [ ] Theme tokens & CSS
 12. [ ] Import/Export API
@@ -76,7 +136,7 @@ Each task will be tackled sequentially to maintain a stable, testable feature se
 
 ## Next steps
 
-With interactive ports and connection flows shipped, the focus shifts to **Edge routing** so canvases can present clean cubic links before the keyboard and theming layers land.
+With interactive ports and connection flows shipped, the focus stays on **Edge routing**. The routing helper now blends straight connectors into quadratic curves, reports curvature metrics, and the React layer inflates node hitboxes so edges detour around obstacles by default (or via `build_node_obstacles` for custom shells). Route options can now declare `ignore_obstacle_ids` so start/end nodes get excluded while intermediate blockers still enforce detours. Next up: pressure-test the heuristics, expose developer diagnostics, and then tackle the keyboard and theming layers.
 
 ## Automation roadmap
 
